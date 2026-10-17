@@ -300,6 +300,14 @@
     .waiting-changed{grid-column:1/-1;color:var(--muted);font:500 10px "IBM Plex Mono",monospace}
     .waiting-empty{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
     .waiting-breakdown{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 0 0;color:var(--muted);font:500 10px "IBM Plex Mono",monospace}
+    .lifecycle-lanes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px}
+    .lifecycle-lane{min-width:0}
+    .lifecycle-lane-head{margin:0 0 2px;font-size:15px;line-height:1.3}
+    .lifecycle-row{grid-template-columns:minmax(0,1fr)}
+    .held-marker{display:inline-flex;padding:2px 7px;background:var(--amber-soft);color:var(--amber);font:600 10px "IBM Plex Mono",monospace;white-space:nowrap;vertical-align:1px}
+    .lane-planned{margin:6px 0 2px;padding:8px 10px;background:var(--paper);border:1px solid var(--line);font-size:12px;line-height:1.45;overflow-wrap:anywhere;white-space:pre-line}
+    .lane-planned-label{display:block;margin-bottom:3px;color:var(--muted);font:600 10px "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.05em}
+    @media(max-width:760px){.lifecycle-lanes{grid-template-columns:1fr}}
     .relevance-chip{display:inline-flex;margin-left:7px;padding:2px 6px;background:var(--amber-soft);color:var(--amber);font:600 9px "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.05em;vertical-align:2px}
     .up-next{margin:0 0 22px;padding:16px;border:2px solid var(--green);background:var(--paper);box-shadow:var(--shadow)}
     .up-next .queue-head{border-bottom-color:var(--green);margin-bottom:14px}
@@ -510,7 +518,7 @@
     .outreach-search-clear{align-self:stretch;white-space:nowrap}
     .outreach-search-status{align-self:center;min-width:105px;color:var(--muted);font:500 11px "IBM Plex Mono",monospace;text-align:right;white-space:nowrap}
     #pursue-section.search-active .focus-note,#pursue-section.search-active .focus-control{display:none}
-    .outreach-view.search-active #outreach-up-next-section,.outreach-view.search-active #outreach-waiting-section,.outreach-view.search-active .outreach-metrics{display:none}
+    .outreach-view.search-active #outreach-up-next-section,.outreach-view.search-active #outreach-lifecycle-section,.outreach-view.search-active #outreach-waiting-section,.outreach-view.search-active .outreach-metrics{display:none}
     #outreach-content.search-active{display:block;columns:2;column-gap:12px;margin-bottom:28px}
     #outreach-content.search-active>.outreach-section,#outreach-content.search-active .section-body,#outreach-content.search-active .grid{display:contents}
     #outreach-content.search-active>.outreach-section>summary,#outreach-content.search-active .empty,#outreach-content.search-active .uncc-notice,#outreach-content.search-active .cold-outreach-form,#outreach-content.search-active .cold-terminal{display:none}
@@ -900,8 +908,12 @@
         <div class="outreach-search-status" id="outreach-search-status" role="status" aria-live="polite"></div>
       </section>
       <details class="queue up-next collapsible-section jump-target" id="outreach-up-next-section" aria-labelledby="outreach-up-next-heading" open>
-        <summary class="queue-head"><div><h2 id="outreach-up-next-heading">Actionable — today (<span class="section-heading-count" id="outreach-up-next-count">0 actions · ~0 min</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">Shows daily, sorted by live-role relevance — contacts at a company with a live interview or application ride on top. Awaiting-acceptance and no-reply contacts are not actions; they sit in Waiting below.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
+        <summary class="queue-head"><div><h2 id="outreach-up-next-heading">Actionable — today (<span class="section-heading-count" id="outreach-up-next-count">0 actions · ~0 min</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">Due-gated: only work whose due date is today or earlier counts, plus connection sends inside this week’s cap of 15 new requests. Everything not yet due is backlog. ABB contacts are held while interviewing and never count here.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
         <ol class="up-next-list section-body" id="outreach-up-next-list"></ol>
+      </details>
+      <details class="queue waiting-shell lifecycle-shell collapsible-section jump-target" id="outreach-lifecycle-section" aria-labelledby="outreach-lifecycle-heading" open>
+        <summary class="queue-head"><div><h2 id="outreach-lifecycle-heading">Lifecycle lanes (<span class="section-heading-count" id="outreach-lifecycle-count">—</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">Every invite in flight and every connected contact, by stage. Lane populations are not actions — only the due-gated queue above counts toward actionable today.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
+        <div class="section-body" id="outreach-lifecycle-list"><p class="waiting-empty">Lifecycle lanes load with the outreach contacts.</p></div>
       </details>
       <details class="queue waiting-shell collapsible-section jump-target" id="outreach-waiting-section" aria-labelledby="outreach-waiting-heading">
         <summary class="queue-head"><div><h2 id="outreach-waiting-heading">Waiting — weekly check (<span class="section-heading-count" id="outreach-waiting-count">— waiting</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">Checked once a week, not daily. Someone is named here only when a LinkedIn archive import shows their status actually changed.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
@@ -2617,7 +2629,7 @@
         var outreachOn=name==='outreach',projectsOn=name==='projects',funnelOn=name==='funnel',jobs=document.getElementById('jobs-view'),outreachView=document.getElementById('outreach-view'),projectsView=document.getElementById('projects-view'),funnelView=document.getElementById('funnel-view'),jobsTab=document.getElementById('jobs-tab'),outreachTab=document.getElementById('outreach-tab'),projectsTab=document.getElementById('projects-tab'),funnelTab=document.getElementById('funnel-tab');
         jobs.hidden=outreachOn||projectsOn||funnelOn;outreachView.hidden=!outreachOn;if(projectsView)projectsView.hidden=!projectsOn;if(funnelView)funnelView.hidden=!funnelOn;jobsTab.setAttribute('aria-selected',!outreachOn&&!projectsOn&&!funnelOn?'true':'false');outreachTab.setAttribute('aria-selected',outreachOn?'true':'false');if(projectsTab)projectsTab.setAttribute('aria-selected',projectsOn?'true':'false');if(funnelTab)funnelTab.setAttribute('aria-selected',funnelOn?'true':'false');
         if(outreachOn&&outreach.available===null)loadOutreachData();if(outreachOn&&coldOutreach.available===null)loadColdOutreachData();
-        if(projectsOn&&projects.available===null)loadProjectsData();
+        if(projectsOn)loadProjectsData();
         if(funnelOn&&funnel.available===null)loadFunnelData();else if(funnelOn&&funnel.available)renderFunnel();
       }
       var jsonpCounter=0;
@@ -2733,33 +2745,45 @@
         if(items.length===2)return items[0]+' and '+items[1];
         return items.slice(0,-1).join(', ')+', and '+items[items.length-1];
       }
+      function liveApplicationForCompany(company){
+        if(!company||!data.jobs||!data.jobs.length)return null;
+        var matches=data.jobs.filter(function(job){return !isRemoved(job)&&/^(?:Applied|Interviewing)$/i.test(String(job.stage||'').trim())&&(companyMatchesFilter(job.company,company)||companyMatchesFilter(company,job.company));});
+        if(!matches.length)return null;
+        matches.sort(function(a,b){var ar=/^Interviewing$/i.test(String(a.stage||'').trim())?0:1,br=/^Interviewing$/i.test(String(b.stage||'').trim())?0:1;return ar-br||newerFirst(a,b);});
+        return matches[0];
+      }
+      function hasLiveApplication(company){return !!liveApplicationForCompany(company);}
+      function isHeldCompany(company){return companyKey(company)==='abb'||companyMatchesFilter(company,'ABB')||companyMatchesFilter('ABB',company);}
+      function contactAgeDays(contact){var sent=dateOnly(contact&&contact.stateDate);return sent?Math.max(0,daysBetween(browserToday(),sent)):null;}
+      function isBullpenContact(contact){var age=contactAgeDays(contact);return age!==null&&age>14;}
+      function requestsSentThisWeek(contacts){
+        var today=browserToday(),start=new Date(today.getFullYear(),today.getMonth(),today.getDate());start.setDate(start.getDate()-((start.getDay()+6)%7));
+        var startDay=calendarDay(start),endDay=startDay+6*86400000;
+        return (contacts||[]).filter(function(contact){if(contact.state!=='REQUEST_SENT')return false;var day=calendarDay(contact.stateDate);return day!==null&&day>=startDay&&day<=endDay;}).length;
+      }
+      function dm2Text(contact,job){
+        return 'Hi '+coldFirstName(contact)+', thanks for connecting! I applied for '+(contact.company||'[Company]')+"'s "+(job?job.title:'')+' role, req '+(job?job.reqId:'')+'. Could you help me connect with the hiring manager, or forward along my resume? Thanks! Ashlyn';
+      }
+      function bullpenReinviteText(contact,job){
+        return 'Hi '+coldFirstName(contact)+', circling back on my connection request \u2014 I applied for '+(contact.company||'[Company]')+"'s "+(job?job.title:'')+' role, req '+(job?job.reqId:'')+', and I would still love to connect. Could you help me connect with the hiring manager, or forward along my resume? Thanks! Ashlyn';
+      }
       function coldTemplate(contact){
-        var name=coldFirstName(contact),company=contact.company||'[Company]',segment=String(contact.segment||'role').toLowerCase(),state=contact.state;
-        function request(){
-          if(segment==='uncc')return 'Hi '+name+', fellow UNC Charlotte engineering grad here, now in Raleigh and focused on embedded systems, and I’d appreciate connecting.';
-          if(segment==='rtp')return "Hi "+name+", I'm a recent EE/CompE grad in Raleigh focused on embedded systems, and I'd appreciate connecting with another Triangle engineer.";
-          if(segment==='recruiter')return "Hi "+name+", I'm a recent EE/CompE grad in Raleigh looking for embedded and firmware roles, and I'd appreciate connecting.";
-          return "Hi "+name+", I'm a recent EE/CompE grad in Raleigh focused on embedded systems, and I'd appreciate connecting.";
+        // Planned messages are regenerated from current data at render
+        // time — no stored per-contact draft text is carried or shown.
+        var state=contact.state;
+        if(state==='IDENTIFIED'){
+          return 'Hi '+coldFirstName(contact)+", I graduated with a double-major EE/CompE at UNC Charlotte in May (GPA 3.7, completed in 4 years). I'm local and exploring roles in RTP and would love to connect. Thanks! Ashlyn";
         }
-        function dm2(){
-          var roles=appliedRoleTitlesForCompany(company);
-          if(roles.length)return 'Hi '+name+', thanks for connecting. I’m a recent EE/CompE grad, and I’ve applied for '+naturalList(roles)+' at '+company+'. Could you help me connect with the hiring manager, or forward along my resume? I can send it right over.';
-          return 'Hi '+name+', thanks for connecting. I’m a recent EE/CompE grad focused on embedded and firmware roles. Could you help me connect with the hiring manager at '+company+', or forward along my resume? I can send it right over.';
+        if(state==='ACCEPTED'){
+          var job=liveApplicationForCompany(contact.company);
+          return job?dm2Text(contact,job):'';
         }
-        function bump(){
-          if(segment==='recruiter')return 'Hi '+name+', following up on my note. I’m still interested in early-career embedded or firmware work. Is there a team or role family you’d recommend I watch?';
-          if(segment==='uncc')return 'Hi '+name+', following up on my note from one Charlotte engineer to another. I’d still value 15 minutes to hear how you found your path, whenever your schedule allows.';
-          if(segment==='rtp')return 'Hi '+name+', following up on my note. I’d still appreciate 15 minutes to learn about the Triangle team and the embedded work happening locally, whenever convenient.';
-          return 'Hi '+name+', following up on my note. I’d still value 15 minutes to ask one focused question about your work, whenever your schedule allows.';
+        if(state==='BUMP_DUE'||state==='CLOSE_DUE')return 'Draft fresh from the live thread when due.';
+        if(state==='REQUEST_SENT'||state==='STALE'){
+          if(isBullpenContact(contact)){var anchoredJob=liveApplicationForCompany(contact.company);if(anchoredJob)return bullpenReinviteText(contact,anchoredJob);}
+          return '';
         }
-        function close(){return 'Last note from me, '+name+'. I don’t want to crowd your inbox. If the timing is ever better, I’d still value your perspective. Either way, thanks for connecting.';}
-        var body='';
-        if(state==='IDENTIFIED'||state==='REQUEST_SENT'||state==='INMAIL_SENT'||state==='STALE')body=request();
-        else if(state==='ACCEPTED'||state==='DM2_SENT')body=dm2();
-        else if(state==='BUMP_DUE'||state==='BUMP_SENT')body=bump();
-        else if(state==='CLOSE_DUE')body=close();
-        else body=request();
-        return body+'\n\nThanks!\nAshlyn';
+        return '';
       }
       function coldInstruction(contact){
         if(contact.state==='STALE')return 'No reply after 14 days. Leave the request pending on LinkedIn.';
@@ -2824,7 +2848,7 @@
         return html;
       }
       function coldContactCard(contact,index,compact,person){
-        var template=coldTemplate(contact),profile=contact.url?'<a href="'+esc(contact.url)+'" target="_blank" rel="noopener noreferrer">'+esc(contact.name||'Unnamed contact')+' ↗</a>':esc(contact.name||'Unnamed contact'),actionableNote=(contact.state==='IDENTIFIED'||contact.state==='ACCEPTED'||contact.state==='BUMP_DUE'||contact.state==='CLOSE_DUE'),sentLabel=actionableNote?'Copy-paste note':'Sent note (for reference)',replyFootnote=(contact.state==='INMAIL_SENT'||contact.state==='DM2_SENT'||contact.state==='BUMP_DUE'||contact.state==='BUMP_SENT'||contact.state==='CLOSE_DUE')?'<p class="cold-footnote">'+esc(contact.state==='INMAIL_SENT'?'InMail path: no acceptance step. Mark replied only when they respond directly.':'Press the main button after you take the step on LinkedIn. ‘Mark replied’ is only for when they respond.')+'</p>':'',pathBadge=contact.path?'<span class="cold-path '+esc(contact.path)+'">'+esc(contact.path==='inmail'?'InMail path':'Connection request path')+'</span>':'',copyRow=actionableNote?'<div class="outreach-copy-row"><button type="button" class="action subtle cold-copy" data-message="'+esc(template)+'">Copy note</button><span class="outreach-copy-feedback" role="status" aria-live="polite"></span></div>':'',templateBlock=template?'<div><label class="label" for="cold-template-'+(compact?'today-':'main-')+index+'">'+sentLabel+'</label><textarea class="cold-template" id="cold-template-'+(compact?'today-':'main-')+index+'" readonly>'+esc(template)+'</textarea>'+copyRow+'</div>':'<div><div class="label">LinkedIn step</div><p class="cold-instruction">'+esc(coldInstruction(contact))+'</p></div>';
+        var template=coldTemplate(contact),profile=contact.url?'<a href="'+esc(contact.url)+'" target="_blank" rel="noopener noreferrer">'+esc(contact.name||'Unnamed contact')+' ↗</a>':esc(contact.name||'Unnamed contact'),isResurrection=(contact.state==='REQUEST_SENT'||contact.state==='STALE')&&!!template&&isBullpenContact(contact)&&hasLiveApplication(contact.company),actionableNote=(contact.state==='IDENTIFIED'||contact.state==='ACCEPTED'||isResurrection),sentLabel=isResurrection?'December resurrection batch \u2014 planned re-invite note':actionableNote?'Planned message':'Sent note (for reference)',replyFootnote=(contact.state==='INMAIL_SENT'||contact.state==='DM2_SENT'||contact.state==='BUMP_DUE'||contact.state==='BUMP_SENT'||contact.state==='CLOSE_DUE')?'<p class="cold-footnote">'+esc(contact.state==='INMAIL_SENT'?'InMail path: no acceptance step. Mark replied only when they respond directly.':'Press the main button after you take the step on LinkedIn. ‘Mark replied’ is only for when they respond.')+'</p>':'',pathBadge=contact.path?'<span class="cold-path '+esc(contact.path)+'">'+esc(contact.path==='inmail'?'InMail path':'Connection request path')+'</span>':'',copyRow=actionableNote?'<div class="outreach-copy-row"><button type="button" class="action subtle cold-copy" data-message="'+esc(template)+'">Copy note</button><span class="outreach-copy-feedback" role="status" aria-live="polite"></span></div>':'',templateBlock=(contact.state==='BUMP_DUE'||contact.state==='CLOSE_DUE')?'<div><div class="label">Planned message</div><p class="copy">Draft fresh from the live thread when due.</p></div>':template?'<div><label class="label" for="cold-template-'+(compact?'today-':'main-')+index+'">'+sentLabel+'</label><textarea class="cold-template" id="cold-template-'+(compact?'today-':'main-')+index+'" readonly>'+esc(template)+'</textarea>'+copyRow+'</div>':'<div><div class="label">LinkedIn step</div><p class="cold-instruction">'+esc(coldInstruction(contact))+'</p></div>';
         // Consolidated tile: when this person also lives in the people pipeline,
         // that card is not rendered separately — its relationship context (last
         // touch, next nudge, live roles, log-a-touch) is folded in here instead.
@@ -2834,7 +2858,7 @@
           var roles=person.roles&&person.roles.length?'<ul class="role-links">'+person.roles.map(function(job){return '<li><a class="role-link outreach-job-link" href="#'+esc(jobAnchorId(job))+'" data-job-target="'+esc(jobAnchorId(job))+'">'+esc(job.title)+(job.reqId?' · '+esc(job.reqId):'')+'</a></li>';}).join('')+'</ul>':'<p class="copy muted">No live roles at this company.</p>';
           personHtml=(person.warm?'<div><span class="warm-badge">Warm path</span></div>':'')+'<div class="person-facts"><div class="fact"><span>Days since last touch</span><strong>'+esc(days)+'</strong></div><div class="fact"><span>Next nudge</span><strong>'+esc(formatDate(nextNudge))+'</strong></div></div><div><div class="label">Live roles</div>'+roles+'</div><form class="touch-form"><label class="sr-only" for="'+touchId+'-channel">Channel</label><select class="field" id="'+touchId+'-channel" name="channel"><option>LinkedIn</option><option>Email</option><option>In-person</option><option>Other</option></select><div class="response-group" role="group" aria-label="Response received"><button type="button" class="response-option" data-response="Yes" aria-pressed="false">Response: Yes</button><button type="button" class="response-option" data-response="No" aria-pressed="true">No</button></div><label class="sr-only" for="'+touchId+'-summary">Touch summary</label><input class="field wide" id="'+touchId+'-summary" name="summary" type="text" placeholder="Short summary" required><label class="sr-only" for="'+touchId+'-nudge">Next nudge date</label><input class="field" id="'+touchId+'-nudge" name="nextNudge" type="date" value="'+defaultNudgeDate()+'"><button type="submit" class="action primary">Log a touch</button><p class="outreach-feedback wide" role="status" aria-live="polite"></p></form>';
         }
-        return '<article id="cold-card-'+esc(contact.row)+'" class="card cold-card" data-row="'+esc(contact.row)+'" data-person="'+esc(contact.name)+'" data-company="'+esc(contact.company)+'" data-search="'+esc((contact.name+' '+contact.company+' '+contact.title+' '+coldSegmentLabel(contact.segment)+' '+contact.state+(contact.state==='IDENTIFIED'?' suggested':'')).toLowerCase())+'"><div class="card-head"><div class="topline"><span class="company">Contact · '+esc(contact.company||'Company not listed')+'</span><span class="stage cold-state state-'+esc(contact.state.toLowerCase().replace(/_/g,'-'))+'">'+esc(contact.state==='INMAIL_SENT'?'InMail sent':contact.state==='IDENTIFIED'?'Suggested':statusDisplay(contact.state))+'</span></div><h3 class="cold-name">'+profile+'</h3><p class="cold-title">'+esc(contact.title||'Title not listed')+'</p></div><div class="card-body"><div><span class="cold-segment">'+esc(coldSegmentLabel(contact.segment))+'</span>'+pathBadge+'</div><div class="cold-facts"><div class="fact"><span>Next action</span><strong>'+esc(coldNextAction(contact))+'</strong></div><div class="fact"><span>Due</span><strong>'+esc(formatDate(effectiveColdDue(contact)))+'</strong></div></div>'+personHtml+templateBlock+logMessageControl({name:contact.name,company:contact.company,title:contact.title,linkedin:contact.url})+'<div class="cold-actions">'+coldActionButtons(contact)+'</div>'+replyFootnote+'<p class="cold-feedback" role="status" aria-live="polite"></p></div></article>';
+        return '<article id="cold-card-'+esc(contact.row)+'" class="card cold-card" data-row="'+esc(contact.row)+'" data-person="'+esc(contact.name)+'" data-company="'+esc(contact.company)+'" data-search="'+esc((contact.name+' '+contact.company+' '+contact.title+' '+coldSegmentLabel(contact.segment)+' '+contact.state+(contact.state==='IDENTIFIED'?' suggested':'')).toLowerCase())+'"><div class="card-head"><div class="topline"><span class="company">Contact · '+esc(contact.company||'Company not listed')+'</span><span class="stage cold-state state-'+esc(contact.state.toLowerCase().replace(/_/g,'-'))+'">'+esc(contact.state==='INMAIL_SENT'?'InMail sent':contact.state==='IDENTIFIED'?'Suggested':statusDisplay(contact.state))+'</span></div><h3 class="cold-name">'+profile+'</h3><p class="cold-title">'+esc(contact.title||'Title not listed')+'</p></div><div class="card-body"><div><span class="cold-segment">'+esc(coldSegmentLabel(contact.segment))+'</span>'+pathBadge+'</div><div class="cold-facts"><div class="fact"><span>Next action</span><strong>'+esc(coldNextAction(contact))+'</strong></div><div class="fact"><span>Due</span><strong>'+esc(contact.state==='IDENTIFIED'?(contact.nextDue?formatDate(contact.nextDue):'Weekly cap queue'):formatDate(effectiveColdDue(contact)))+'</strong></div></div>'+personHtml+templateBlock+logMessageControl({name:contact.name,company:contact.company,title:contact.title,linkedin:contact.url})+'<div class="cold-actions">'+coldActionButtons(contact)+'</div>'+replyFootnote+'<p class="cold-feedback" role="status" aria-live="polite"></p></div></article>';
       }
       var REPLY_INBOX_CLOSURE_MARKERS=['thread closed','closed warmly','no action pending','no bump','thanked him','thanked her','thank-you sent','thank you sent','resume sent','closer was sent','thread is with him','thread is with her'];
       function replyInboxContacts(){
@@ -3025,7 +3049,7 @@
           projectsLoading=false;if(token!==projectsRequest)return false;
           if(!payload||!Array.isArray(payload.projects)||!payload.projects.length)throw new Error('no projects');
           projects={list:payload.projects.map(normalizeProject),loaded:true,available:true};renderProjects();return true;
-        }).catch(function(){projectsLoading=false;if(token===projectsRequest)showProjectsUnavailable();return false;});
+        }).catch(function(){projectsLoading=false;if(token===projectsRequest&&!projects.loaded)showProjectsUnavailable();return false;});
       }
       function funnelNumber(value){var n=Number(value);return isFinite(n)&&n>0?n:0;}
       function awaitingFallbackDate(job){
@@ -3144,7 +3168,7 @@
       }
       function fallbackColdAdd(params){return fallbackColdPost({name:params.name,company:params.company,title:params.title,linkedin:params.url,reqId:'',roleTitle:'',scope:'Company',channel:'LinkedIn',status:'IDENTIFIED',notes:'[4-touch:'+params.segment+'] '+params.hook});}
       function runColdAdvance(button){
-        if(button.disabled)return;var card=button.closest('.cold-card'),line=card&&card.querySelector('.cold-feedback'),row=button.dataset.row,event=button.dataset.event,contact=coldOutreach.contacts.filter(function(item){return String(item.row)===String(row);})[0],message=contact&&/^sent_/.test(event)?coldTemplate(contact):'';if(!card||!line||!contact)return;
+        if(button.disabled)return;var card=button.closest('.cold-card'),line=card&&card.querySelector('.cold-feedback'),row=button.dataset.row,event=button.dataset.event,contact=coldOutreach.contacts.filter(function(item){return String(item.row)===String(row);})[0],message=contact&&/^sent_/.test(event)&&contact.state!=='BUMP_DUE'&&contact.state!=='CLOSE_DUE'?coldTemplate(contact):'';if(!card||!line||!contact)return;
         card.querySelectorAll('.cold-advance').forEach(function(control){control.disabled=true;});line.className='cold-feedback';line.textContent='Saving…';var inmail=event==='sent_inmail',request=contact.fallback?fallbackColdAdvance(contact,event):coldOutreachPost('outreachAdvance',{row:row,event:event,message:message,path:inmail?'inmail':contact.path||'connection',nextAction:inmail?'Wait for reply; follow up in 1 week if no response':'',nextDue:inmail?addDaysIso(localIsoDate(),7):''});request.then(function(){line.className='cold-feedback success';line.textContent='Saved. Refreshing…';if(contact.fallback)loadConnectionsData();else loadColdOutreachData();}).catch(function(){line.className='cold-feedback error';line.textContent='Could not save. Please try again.';card.querySelectorAll('.cold-advance').forEach(function(control){control.disabled=false;});});
       }
       function bindColdOutreachControls(root){
@@ -3156,7 +3180,7 @@
       function showOutreachUnavailable(networkFailure){
         outreach={threads:[],entries:[],companies:[],loaded:false,available:false};
         document.getElementById('outreach-notice').hidden=false;document.getElementById('outreach-notice').textContent=networkFailure?'Outreach could not connect. Use Refresh board to try again.':'Outreach actions activate after the next backend deploy';document.getElementById('outreach-content').hidden=false;['followups-section','people-pipeline-section','outreach-uncc-section','company-watch-section'].forEach(function(id){document.getElementById(id).hidden=true;});document.getElementById('company-contact-tree-section').hidden=false;
-        document.getElementById('outreach-followups-count').textContent='—';document.getElementById('outreach-due-detail').textContent='— due';document.getElementById('outreach-people-count').textContent='—';document.getElementById('outreach-alumni-count').textContent='—';document.getElementById('outreach-company-count').textContent='—';document.getElementById('outreach-up-next-count').textContent='0 actions · ~0 min';document.getElementById('outreach-up-next-list').innerHTML=queueMarkup([],'Outreach could not connect. Refresh the board to try again.');renderCompanyContactTree();renderDoToday();renderUpNext();if(funnel.available)renderFunnel();
+        document.getElementById('outreach-followups-count').textContent='—';document.getElementById('outreach-due-detail').textContent='— due';document.getElementById('outreach-people-count').textContent='—';document.getElementById('outreach-alumni-count').textContent='—';document.getElementById('outreach-company-count').textContent='—';document.getElementById('outreach-up-next-count').textContent='0 actionable today · 0 in backlog';document.getElementById('outreach-up-next-list').innerHTML=queueMarkup([],'Outreach could not connect. Refresh the board to try again.');renderCompanyContactTree();renderDoToday();renderUpNext();if(funnel.available)renderFunnel();
       }
       function loadFollowups(){
         return outreachGet('followups',0,0).then(function(payload){
@@ -3457,30 +3481,117 @@
         (Array.isArray(company.recentRoles)?company.recentRoles:[]).forEach(function(role){activity=Math.max(activity,activityTime(val(role,'dateScraped','dateAdded','firstSeen','date_scraped','date_added')));});
         return {band:dueNow?0:active?1:unevaluated?2:3,activity:activity,name:String(name||'')};
       }
+      function outreachLanes(){
+        var lanes={pending:[],bullpenAnchored:[],bullpenUnanchored:[],suspended:[],dm2:[],bump:[],close:[],conversation:[],parked:[]};
+        if(!coldOutreach.available)return lanes;
+        coldOutreach.contacts.forEach(function(contact){
+          var state=contact.state,age=contactAgeDays(contact),entry={contact:contact,age:age,held:isHeldCompany(contact.company),live:hasLiveApplication(contact.company)};
+          if(state==='REQUEST_SENT'||state==='STALE'||state==='INMAIL_SENT'){
+            if(age!==null&&age>14){if(entry.live)lanes.bullpenAnchored.push(entry);else lanes.bullpenUnanchored.push(entry);}
+            else lanes.pending.push(entry);
+          }else if(state==='CLOSED'){
+            if(contact.nextDue)lanes.suspended.push(entry);
+          }else if(state==='ACCEPTED')lanes.dm2.push(entry);
+          else if(state==='BUMP_DUE')lanes.bump.push(entry);
+          else if(state==='CLOSE_DUE')lanes.close.push(entry);
+          else if(state==='IN_CONVERSATION'||state==='MEETING_SCHEDULED'||state==='REPLIED')lanes.conversation.push(entry);
+          else if(state==='DM2_SENT'||state==='BUMP_SENT'){
+            if(!entry.live)lanes.parked.push(entry);
+          }
+        });
+        return lanes;
+      }
+      function renderOutreachLanes(){
+        var list=document.getElementById('outreach-lifecycle-list'),count=document.getElementById('outreach-lifecycle-count');if(!list||!count)return;
+        if(!coldOutreach.available){count.textContent='—';list.innerHTML='<p class="waiting-empty">Lifecycle lanes load with the outreach contacts.</p>';return;}
+        var lanes=outreachLanes(),todayDay=calendarDay(browserToday());
+        function detail(entry){
+          var c=entry.contact,parts=[];
+          if((c.state==='REQUEST_SENT'||c.state==='STALE'||c.state==='INMAIL_SENT')&&entry.age!==null)parts.push('sent '+entry.age+' day'+(entry.age===1?'':'s')+' ago');
+          if(c.state==='CLOSED'&&c.nextDue)parts.push('unlocks '+formatDate(c.nextDue));
+          else if(c.state==='ACCEPTED'||c.state==='BUMP_DUE'||c.state==='CLOSE_DUE'){var dueDay=calendarDay(c.nextDue);if(dueDay===null)dueDay=calendarDay(effectiveColdDue(c));if(dueDay!==null)parts.push(dueDay<=todayDay?'due now':'due '+formatDate(c.nextDue||effectiveColdDue(c)));}
+          return parts.join(' · ');
+        }
+        function planned(entry){
+          var c=entry.contact;
+          if(c.state==='BUMP_DUE'||c.state==='CLOSE_DUE')return '<p class="lane-planned">Draft fresh from the live thread when due.</p>';
+          if(c.state==='ACCEPTED'){var job=liveApplicationForCompany(c.company);return job?'<p class="lane-planned">'+esc(dm2Text(c,job))+'</p>':'';}
+          if((c.state==='REQUEST_SENT'||c.state==='STALE'||c.state==='INMAIL_SENT')&&entry.age!==null&&entry.age>14){var bjob=liveApplicationForCompany(c.company);return bjob?'<p class="lane-planned"><span class="lane-planned-label">December resurrection batch</span>'+esc(bullpenReinviteText(c,bjob))+'</p>':'';}
+          return '';
+        }
+        function laneBlock(title,entries){
+          var rows=entries.length?entries.map(function(entry){var c=entry.contact,d=detail(entry);return '<li class="waiting-row lifecycle-row"><span><strong>'+esc(c.name||'Unnamed contact')+'</strong> — '+esc(c.company||'Company not listed')+(d?' · '+esc(d):'')+(entry.held?' <span class="held-marker">Held — interviewing</span>':'')+planned(entry)+'</span></li>';}).join(''):'<li class="waiting-row lifecycle-row"><span class="waiting-empty">None right now.</span></li>';
+          return '<section class="lifecycle-lane"><h3 class="lifecycle-lane-head">'+esc(title)+' <span class="count">'+entries.length+'</span></h3><ul class="waiting-list">'+rows+'</ul></section>';
+        }
+        var total=lanes.pending.length+lanes.bullpenAnchored.length+lanes.bullpenUnanchored.length+lanes.suspended.length+lanes.dm2.length+lanes.bump.length+lanes.close.length+lanes.conversation.length+lanes.parked.length;
+        count.textContent=total+' contact'+(total===1?'':'s')+' in lanes';
+        list.innerHTML='<div class="lifecycle-lanes">'+laneBlock('Pending — invite sent 0–14 days ago',lanes.pending)+laneBlock('Bullpen — anchored',lanes.bullpenAnchored)+laneBlock('Bullpen — unanchored',lanes.bullpenUnanchored)+laneBlock('Suspended — re-invite lockout',lanes.suspended)+laneBlock('DM2 owed',lanes.dm2)+laneBlock('Bump due',lanes.bump)+laneBlock('Close due',lanes.close)+laneBlock('In conversation',lanes.conversation)+laneBlock('Parked',lanes.parked)+'</div>';
+      }
       function renderOutreachUpNext(people,threads,companies){
         if(!supplementalReady){showUpNextLoading('outreach-up-next-list','outreach-up-next-count');return;}
-        var today=browserToday(),todayDay=calendarDay(today),items=[];
+        var today=browserToday(),todayDay=calendarDay(today),items=[],backlog=0;
         function activeJobCompany(company){
           return data.jobs.some(function(job){
             return !isRemoved(job)&&/^(?:Pursuing|Applied|Interviewing|Offer(?: received)?)$/i.test(String(job.stage||'').trim())&&(companyMatchesFilter(job.company,company)||companyMatchesFilter(company,job.company));
           });
         }
         function coldDue(contact){var day=calendarDay(effectiveColdDue(contact));return day===null?Infinity:day;}
+        function timingSuffix(due){
+          if(due===Infinity)return '';
+          var delta=Math.round((due-todayDay)/86400000);
+          return delta<0?' · '+Math.abs(delta)+' day'+(Math.abs(delta)===1?'':'s')+' overdue':delta===0?' · due today':' · due in '+delta+' day'+(delta===1?'':'s');
+        }
         threads.forEach(function(thread,index){if(isPortalStatusCheck(thread))return;var due=calendarDay(val(thread,'dueDate'));if(due!==null&&due<=todayDay){var action=followupActionLabel(val(thread,'nextAction'))||'Complete follow-up',company=val(thread,'company')||'',role=val(thread,'role')||'',lateDays=Math.max(0,Math.round((todayDay-due)/86400000)),found=findJob(val(thread,'reqId')),portalPrompt=appliedPortalCheckPrompt(thread,found);items.push({rank:1,tie:due,title:(portalPrompt||action)+' — '+company+' · '+role,context:(portalPrompt?portalCheckInstruction()+' · ':'')+(lateDays?lateDays+' day'+(lateDays===1?'':'s')+' overdue':'Due today'),minutes:10,followup:action,reqId:val(thread,'reqId'),target:found?jobAnchorId(found.job):'',search:company+' '+role});}});
         if(coldOutreach.available){
-          coldActiveContacts().filter(function(contact){return contact.state==='ACCEPTED';}).forEach(function(contact,index){var due=coldDue(contact),delta=due===Infinity?null:Math.round((due-todayDay)/86400000),timing=delta===null?'':delta<0?' · '+Math.abs(delta)+' day'+(Math.abs(delta)===1?'':'s')+' overdue':delta===0?' · due today':' · due in '+delta+' day'+(delta===1?'':'s');items.push({rank:.5,tie:due===Infinity?todayDay+index:due,category:'Outreach responses',title:'Send the ask (DM2) to '+contact.name,context:(contact.company||'Company not listed')+' — '+(contact.title||'title not listed')+timing+' · they accepted',minutes:10,outreachTarget:'cold-card-'+contact.row,person:contact.name,company:contact.company,search:(contact.name||'')+' '+(contact.company||'')});});
-          coldActiveContacts().filter(function(contact){return contact.state==='IDENTIFIED';}).sort(function(a,b){var aPriority=activeJobCompany(a.company),bPriority=activeJobCompany(b.company);if(aPriority!==bPriority)return aPriority?-1:1;var ad=coldDue(a),bd=coldDue(b);return ad-bd||String(a.name||'').localeCompare(String(b.name||''));}).forEach(function(contact,index){var priority=activeJobCompany(contact.company),due=coldDue(contact),delta=due===Infinity?null:Math.round((due-todayDay)/86400000),timing=delta===null?'':delta<0?' · '+Math.abs(delta)+' day'+(Math.abs(delta)===1?'':'s')+' overdue':delta===0?' · due today':' · due in '+delta+' day'+(delta===1?'':'s');items.push({rank:priority?1.5:2.5,tie:due===Infinity?todayDay+index:due,category:'Cold outreach',title:'Reach out to '+contact.name,context:(contact.company||'Company not listed')+' — connection request or InMail'+timing,minutes:3,outreachTarget:'cold-card-'+contact.row,person:contact.name,company:contact.company,search:(contact.name||'')+' '+(contact.company||''),alwaysVisible:true});});
+          var sentThisWeek=requestsSentThisWeek(coldOutreach.contacts),capRemaining=Math.max(0,15-sentThisWeek);
+          coldActiveContacts().filter(function(contact){return contact.state==='ACCEPTED';}).forEach(function(contact,index){
+            if(isHeldCompany(contact.company))return;
+            var due=coldDue(contact);
+            if(due<=todayDay)items.push({rank:.5,tie:due===Infinity?todayDay+index:due,category:'Outreach responses',title:'Send the ask (DM2) to '+contact.name,context:(contact.company||'Company not listed')+' — '+(contact.title||'title not listed')+timingSuffix(due)+' · they accepted',minutes:10,outreachTarget:'cold-card-'+contact.row,person:contact.name,company:contact.company,search:(contact.name||'')+' '+(contact.company||'')});
+            else backlog++;
+          });
+          coldActiveContacts().filter(function(contact){return contact.state==='BUMP_DUE'||contact.state==='CLOSE_DUE';}).forEach(function(contact,index){
+            if(isHeldCompany(contact.company))return;
+            var due=coldDue(contact),isBump=contact.state==='BUMP_DUE';
+            if(due<=todayDay)items.push({rank:isBump?.55:.6,tie:due===Infinity?todayDay+index:due,category:'Outreach responses',title:(isBump?'Send bump to ':'Send graceful close to ')+contact.name,context:(contact.company||'Company not listed')+' — '+(contact.title||'title not listed')+timingSuffix(due)+' · draft fresh from the live thread',minutes:10,outreachTarget:'cold-card-'+contact.row,person:contact.name,company:contact.company,search:(contact.name||'')+' '+(contact.company||'')});
+            else backlog++;
+          });
+          var identified=coldActiveContacts().filter(function(contact){return contact.state==='IDENTIFIED'&&!isHeldCompany(contact.company);}).sort(function(a,b){var aPriority=activeJobCompany(a.company),bPriority=activeJobCompany(b.company);if(aPriority!==bPriority)return aPriority?-1:1;return String(a.name||'').localeCompare(String(b.name||''));});
+          identified.forEach(function(contact,index){
+            if(index<capRemaining){
+              var priority=activeJobCompany(contact.company);
+              items.push({rank:priority?1.5:2.5,tie:todayDay+index,category:'Cold outreach',title:'Reach out to '+contact.name,context:(contact.company||'Company not listed')+' — connection request or InMail · within this week\u2019s cap ('+sentThisWeek+' of 15 sent)',minutes:3,outreachTarget:'cold-card-'+contact.row,person:contact.name,company:contact.company,search:(contact.name||'')+' '+(contact.company||'')});
+            }else backlog++;
+          });
+          coldOutreach.contacts.filter(function(contact){return contact.state==='CLOSED'&&contact.nextDue;}).forEach(function(contact,index){
+            if(isHeldCompany(contact.company))return;
+            var unlock=calendarDay(contact.nextDue);
+            if(unlock!==null&&unlock<=todayDay)items.push({rank:.8,tie:unlock,category:'Outreach responses',title:'Re-invite '+contact.name,context:(contact.company||'Company not listed')+' — '+(contact.title||'title not listed')+' · re-invite lockout ended '+formatDate(contact.nextDue),minutes:5,outreachTarget:'cold-card-'+contact.row,person:contact.name,company:contact.company,search:(contact.name||'')+' '+(contact.company||'')});
+            else backlog++;
+          });
         }
-        people.forEach(function(person,index){if(/^(?:Request Sent|Stale)$/i.test(String(person.stage||''))||/^(?:Request Sent|Stale)$/i.test(String(person.connectionStatus||'')))return;var next=person.latest?calendarDay(derivedNextNudge(person)):null,due=next!==null&&next<=todayDay,prospect=person.stage==='Prospect',lowConfidence=prospect&&/^low$/i.test(String(person.confidence||'')),appliedCompany=person.roles.some(function(job){return /^(?:Pursuing|Applied|Interviewing|Offer(?: received)?)$/i.test(String(job.stage||'').trim());}),isColdProspect=coldOutreach.available&&coldActiveContacts().some(function(contact){return contact.state==='IDENTIFIED'&&personKey(contact.name)===personKey(person.name)&&(companyMatchesFilter(contact.company,person.company)||companyMatchesFilter(person.company,contact.company));});if((due||prospect)&&!(prospect&&isColdProspect)){items.push({rank:lowConfidence?5:(appliedCompany?1.75:2),tie:due?(next||0):todayDay+index,title:prospect?'Reach out to '+person.name:'Nudge '+person.name,context:(person.company||'Company not listed')+(prospect?' · find the right role or team connection':' · relationship follow-up due'),minutes:10,outreach:true,company:person.company,search:person.name+' '+person.company});}});
-        companies.forEach(function(company,index){var name=String(val(company,'company')||''),connections=Number(val(company,'connectionCount')||0),actionStatus=String(val(company,'actionStatus')||''),checkDue=/check\s*now/i.test(actionStatus);if(connections<5){items.push({rank:3,tie:index,title:'Plant one new connection',context:name+' · '+connections+'/5 meaningful contacts',minutes:10,outreach:true,company:name,search:name});}if(checkDue){items.push({rank:4,tie:index,title:'Check company watch',context:name+' · career-site review due',minutes:10,target:'company-watch-section',search:name});}});
+        people.forEach(function(person,index){
+          if(/^(?:Request Sent|Stale)$/i.test(String(person.stage||''))||/^(?:Request Sent|Stale)$/i.test(String(person.connectionStatus||'')))return;
+          if(isHeldCompany(person.company))return;
+          var next=person.latest?calendarDay(derivedNextNudge(person)):null,due=next!==null&&next<=todayDay,prospect=person.stage==='Prospect',lowConfidence=prospect&&/^low$/i.test(String(person.confidence||'')),appliedCompany=person.roles.some(function(job){return /^(?:Pursuing|Applied|Interviewing|Offer(?: received)?)$/i.test(String(job.stage||'').trim());}),isColdProspect=coldOutreach.available&&coldActiveContacts().some(function(contact){return contact.state==='IDENTIFIED'&&personKey(contact.name)===personKey(person.name)&&(companyMatchesFilter(contact.company,person.company)||companyMatchesFilter(person.company,contact.company));});
+          if(prospect){
+            if(isColdProspect)return;
+            if(due)items.push({rank:lowConfidence?5:(appliedCompany?1.75:2),tie:next||0,title:'Reach out to '+person.name,context:(person.company||'Company not listed')+' · find the right role or team connection',minutes:10,outreach:true,company:person.company,search:person.name+' '+person.company});
+            else backlog++;
+          }else if(due){
+            items.push({rank:lowConfidence?5:(appliedCompany?1.75:2),tie:next||0,title:'Nudge '+person.name,context:(person.company||'Company not listed')+' · relationship follow-up due',minutes:10,outreach:true,company:person.company,search:person.name+' '+person.company});
+          }
+        });
+        companies.forEach(function(company,index){var name=String(val(company,'company')||''),actionStatus=String(val(company,'actionStatus')||''),checkDue=/check\s*now/i.test(actionStatus);if(checkDue){items.push({rank:4,tie:index,title:'Check company watch',context:name+' · career-site review due',minutes:10,target:'company-watch-section',search:name});}});
         // Actionable shows daily and is ordered by live-role relevance
         // first: contacts at a company with a live interview (ABB this week)
         // or a live application ride on top, ahead of equally urgent work at
         // companies with nothing in play. Waiting states never reach this
-        // list — they are gathered by renderWaiting() for the weekly check.
+        // list — they are gathered by renderWaiting() for the weekly check,
+        // and the full stage populations sit in the lifecycle lanes below.
         items.forEach(function(item){item.rel=liveRoleRelevance(item.company);var note=relevanceContext(item.company);if(note&&item.context&&item.context.indexOf(note)<0)item.context+=' · '+note;});
         items.sort(function(a,b){return (a.rel||4)-(b.rel||4)||a.rank-b.rank||a.tie-b.tie;});
-        var visible=items.slice(0,5),minutes=visible.reduce(function(total,item){return total+item.minutes;},0),list=document.getElementById('outreach-up-next-list');list.innerHTML=queueMarkup(visible,'All clear — no actionable outreach work is due today.');document.getElementById('outreach-up-next-count').textContent=(items.length===visible.length?visible.length:visible.length+' of '+items.length)+' actionable · ~'+minutes+' min shown';bindQueueControls(list);renderWaiting();
+        var visible=items.slice(0,5),minutes=visible.reduce(function(total,item){return total+item.minutes;},0),list=document.getElementById('outreach-up-next-list');list.innerHTML=queueMarkup(visible,'All clear — no actionable outreach work is due today.');document.getElementById('outreach-up-next-count').textContent=items.length+' actionable today · '+backlog+' in backlog';bindQueueControls(list);renderWaiting();renderOutreachLanes();
       }
       function renderOutreach(){
         if(!outreach.available)return;promoteSuggestedProspects();var people=outreachPeople(),threads=activeOutreachThreads(),today=browserToday();threads.sort(function(a,b){return (calendarDay(val(a,'dueDate'))||Infinity)-(calendarDay(val(b,'dueDate'))||Infinity);});
@@ -3540,6 +3651,7 @@
             settle('connections',function(){return loadConnectionsData();}),
             settle('outreach',function(){return loadOutreachData();}),
             settle('cold outreach',function(){return loadColdOutreachData();}),
+            settle('projects',function(){return projects.loaded?loadProjectsData():true;}),
             settle('7-day comparison',function(){return loadVelocity();})
           ]).then(function(results){
             if(token!==supplementalRefresh)return;
