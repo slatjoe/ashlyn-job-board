@@ -757,11 +757,18 @@
     .funnel-outcome.rejected{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
     .funnel-outcome-num{font:600 30px/1 "IBM Plex Mono",monospace;color:var(--ink)}
     .funnel-outcome-label{font-size:12.5px;font-weight:600;color:var(--secondary);line-height:1.3}
+    .funnel-subwrap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
+    .funnel-sub{grid-column:2;display:flex;flex-direction:column;gap:6px;min-width:0}
+    .funnel-sub-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px 8px 12px;margin-left:10px;background:color-mix(in srgb,var(--amber-soft) 68%,var(--paper));border:1px solid color-mix(in srgb,var(--amber) 30%,var(--line));text-align:left}
+    .funnel-sub-label{font-size:11.5px;font-weight:600;color:var(--secondary);line-height:1.3}
+    .funnel-sub-num{font:600 18px/1 "IBM Plex Mono",monospace;color:var(--ink)}
     @media(max-width:560px){
       .view-tab{padding:8px 4px;font-size:13px}
       .funnel-bar{min-width:150px}
       .funnel-fan{display:none}
       .funnel-outcomes{grid-template-columns:1fr;margin-top:12px}
+      .funnel-subwrap{grid-template-columns:1fr;margin-top:10px}
+      .funnel-sub{grid-column:auto}
     }
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
   </style>
@@ -2543,7 +2550,7 @@
         jobs.hidden=outreachOn||projectsOn||funnelOn;outreachView.hidden=!outreachOn;if(projectsView)projectsView.hidden=!projectsOn;if(funnelView)funnelView.hidden=!funnelOn;jobsTab.setAttribute('aria-selected',!outreachOn&&!projectsOn&&!funnelOn?'true':'false');outreachTab.setAttribute('aria-selected',outreachOn?'true':'false');if(projectsTab)projectsTab.setAttribute('aria-selected',projectsOn?'true':'false');if(funnelTab)funnelTab.setAttribute('aria-selected',funnelOn?'true':'false');
         if(outreachOn&&outreach.available===null)loadOutreachData();if(outreachOn&&coldOutreach.available===null)loadColdOutreachData();
         if(projectsOn&&projects.available===null)loadProjectsData();
-        if(funnelOn&&funnel.available===null)loadFunnelData();
+        if(funnelOn&&funnel.available===null)loadFunnelData();else if(funnelOn&&funnel.available)renderFunnel();
       }
       var jsonpCounter=0;
       function jsonpRequest(action,params){
@@ -2953,6 +2960,34 @@
         }).catch(function(){projectsLoading=false;if(token===projectsRequest)showProjectsUnavailable();return false;});
       }
       function funnelNumber(value){var n=Number(value);return isFinite(n)&&n>0?n:0;}
+      function awaitingFallbackDate(job){
+        var raw=String(job&&job.statusLog||''),lines=raw.split(/\r?\n/);
+        var pattern=/(\d{4}-\d{2}-\d{2})\s*[\u2014\u2013-]\s*Status\s*(?:\u2192|->)\s*Applied/i;
+        for(var i=0;i<lines.length;i++){var match=String(lines[i]).match(pattern);if(match)return match[1];}
+        return '';
+      }
+      function computeAwaitingSplit(){
+        if(!data||!data.loaded)return null;
+        var followupByReq={};
+        var threads=(outreach&&Array.isArray(outreach.threads))?outreach.threads:[];
+        threads.forEach(function(thread){
+          var req=String(val(thread,'reqId','req_id','Req ID')||'').trim();
+          if(!req||Object.prototype.hasOwnProperty.call(followupByReq,req))return;
+          followupByReq[req]=val(thread,'appliedDate','applied_date','Applied Date');
+        });
+        var today=browserToday(),recent=0,over=0;
+        var members=(Array.isArray(data.jobs)?data.jobs:[]).filter(function(job){return String(job&&job.stage||'').trim().toLowerCase()==='applied';});
+        members.forEach(function(job){
+          var req=String(job.reqId||'').trim(),appliedValue=null,hasFollowup=req&&Object.prototype.hasOwnProperty.call(followupByReq,req);
+          if(hasFollowup)appliedValue=followupByReq[req];
+          else appliedValue=awaitingFallbackDate(job);
+          var appliedDay=appliedValue?calendarDay(appliedValue):null;
+          if(appliedDay===null){recent++;return;}
+          var age=Math.round((calendarDay(today)-appliedDay)/86400000);
+          if(age>30)over++;else recent++;
+        });
+        return {recent:recent,over:over};
+      }
       function renderFunnel(){
         var wrap=document.getElementById('funnel-wrap'),notice=document.getElementById('funnel-notice');if(!wrap||!notice)return;
         if(!funnel.available||!funnel.data){wrap.hidden=true;wrap.innerHTML='';notice.hidden=false;notice.textContent='Funnel is not connected yet.';return;}
@@ -2967,7 +3002,11 @@
         }).join('');
         var outcomes=[['Moved to interview',d.interview,'interview'],['Awaiting response',d.awaiting,'awaiting'],['Rejected',d.rejected,'rejected']];
         var outcomesHtml='<div class="funnel-fan" aria-hidden="true"><span class="fan-v"></span><span class="fan-h"></span><span class="fan-d d1"></span><span class="fan-d d2"></span><span class="fan-d d3"></span></div><div class="funnel-outcomes">'+outcomes.map(function(o){return '<div class="funnel-outcome '+o[2]+'"><span class="funnel-outcome-num">'+o[1]+'</span><span class="funnel-outcome-label">'+esc(o[0])+'</span></div>';}).join('')+'</div>';
-        wrap.innerHTML='<div class="funnel-stages">'+stagesHtml+'</div>'+outcomesHtml;
+        var split=computeAwaitingSplit(),subHtml='';
+        if(split){
+          subHtml='<div class="funnel-subwrap"><div class="funnel-sub"><div class="funnel-sub-row"><span class="funnel-sub-label">30 days or less</span><span class="funnel-sub-num">'+split.recent+'</span></div><div class="funnel-sub-row"><span class="funnel-sub-label">Over 30 days</span><span class="funnel-sub-num">'+split.over+'</span></div></div></div>';
+        }
+        wrap.innerHTML='<div class="funnel-stages">'+stagesHtml+'</div>'+outcomesHtml+subHtml;
       }
       function showFunnelUnavailable(){funnel={data:null,loaded:false,available:false};renderFunnel();}
       function loadFunnelData(){
@@ -3049,7 +3088,7 @@
       function showOutreachUnavailable(networkFailure){
         outreach={threads:[],entries:[],companies:[],loaded:false,available:false};
         document.getElementById('outreach-notice').hidden=false;document.getElementById('outreach-notice').textContent=networkFailure?'Outreach could not connect. Use Refresh board to try again.':'Outreach actions activate after the next backend deploy';document.getElementById('outreach-content').hidden=false;['followups-section','people-pipeline-section','outreach-uncc-section','company-watch-section'].forEach(function(id){document.getElementById(id).hidden=true;});document.getElementById('company-contact-tree-section').hidden=false;
-        document.getElementById('outreach-followups-count').textContent='—';document.getElementById('outreach-due-detail').textContent='— due';document.getElementById('outreach-people-count').textContent='—';document.getElementById('outreach-alumni-count').textContent='—';document.getElementById('outreach-company-count').textContent='—';document.getElementById('outreach-up-next-count').textContent='0 actions · ~0 min';document.getElementById('outreach-up-next-list').innerHTML=queueMarkup([],'Outreach could not connect. Refresh the board to try again.');renderCompanyContactTree();renderDoToday();renderUpNext();
+        document.getElementById('outreach-followups-count').textContent='—';document.getElementById('outreach-due-detail').textContent='— due';document.getElementById('outreach-people-count').textContent='—';document.getElementById('outreach-alumni-count').textContent='—';document.getElementById('outreach-company-count').textContent='—';document.getElementById('outreach-up-next-count').textContent='0 actions · ~0 min';document.getElementById('outreach-up-next-list').innerHTML=queueMarkup([],'Outreach could not connect. Refresh the board to try again.');renderCompanyContactTree();renderDoToday();renderUpNext();if(funnel.available)renderFunnel();
       }
       function loadFollowups(){
         return outreachGet('followups',0,0).then(function(payload){
@@ -3062,7 +3101,7 @@
         var request=loadFollowups().then(function(threadsPayload){return outreachGet('peopleLog').then(function(entriesPayload){return outreachGet('watchData').then(function(companiesPayload){return [threadsPayload,entriesPayload,companiesPayload];});});}).then(function(results){
           if(token!==outreachRequest)return false;var threads=followupsFromPayload(results[0]),entries=results[1].entries,companies=results[2].companies;
           if(!Array.isArray(threads)||!Array.isArray(entries)||!Array.isArray(companies))throw new Error('missing outreach data');
-          outreachLoading=false;outreach={threads:threads,entries:entries,companies:companies,loaded:true,available:true};notice.hidden=true;document.getElementById('outreach-content').hidden=false;['company-contact-tree-section','followups-section','people-pipeline-section','outreach-uncc-section','company-watch-section'].forEach(function(id){document.getElementById(id).hidden=false;});renderOutreach();refreshRoutineRows();renderDoToday();renderUpNext();refreshPortalActions();return ensureAutomaticFollowups();
+          outreachLoading=false;outreach={threads:threads,entries:entries,companies:companies,loaded:true,available:true};notice.hidden=true;document.getElementById('outreach-content').hidden=false;['company-contact-tree-section','followups-section','people-pipeline-section','outreach-uncc-section','company-watch-section'].forEach(function(id){document.getElementById(id).hidden=false;});renderOutreach();refreshRoutineRows();renderDoToday();renderUpNext();refreshPortalActions();if(funnel.available)renderFunnel();return ensureAutomaticFollowups();
         }).then(function(result){return result!==false;}).catch(function(error){if(token===outreachRequest){outreachLoading=false;showOutreachUnavailable(!!(error&&error.network));}return false;});
         outreachLoadPromise=request;request.then(function(){if(outreachLoadPromise===request)outreachLoadPromise=null;});return request;
       }
@@ -3437,7 +3476,7 @@
           ]).then(function(results){
             if(token!==supplementalRefresh)return;
             var failed=results.filter(function(result){return !result.ok;}).map(function(result){return result.name;});
-            supplementalReady=true;renderUpNext();if(outreach.available)renderOutreach();
+            supplementalReady=true;renderUpNext();if(outreach.available)renderOutreach();if(funnel.available)renderFunnel();
             status.className='status-line'+(failed.length?' error':'');status.textContent='Updated from tracker · '+formatGenerated(completedGenerated)+(failed.length?' · Unavailable: '+failed.join(', '):'');button.disabled=false;
           });
         },0);
@@ -3446,7 +3485,7 @@
         if(!payload||!Array.isArray(payload.jobs)){feedError();return;}
         supplementalReady=false;showAllUpNextLoading();
         data={generated:payload.generated||new Date().toISOString(),count:Number(payload.count)||payload.jobs.length,jobs:payload.jobs.map(normalize),connections:data.connections,connectionsLoaded:data.connectionsLoaded,loaded:true};
-        finishRender();loadSupplementalData();
+        finishRender();if(funnel.available)renderFunnel();loadSupplementalData();
       }
       window.renderBoard=function(payload){clearFeedRequest();try{acceptFeed(payload);}catch(error){feedError();}};
       window.renderBoardConnections=function(payload){data.connections=connectionList(payload);data.connectionsLoaded=true;refreshRoutineRows();renderAllConnectionSections();renderDoToday();renderUpNext();if(outreach.available)renderOutreach();if(coldOutreach.available)renderColdOutreach();};
