@@ -272,6 +272,15 @@
     .targeted-chip{display:inline-block;margin-left:6px;padding:2px 5px;background:var(--amber-soft);color:var(--amber);font:600 9px "IBM Plex Mono",monospace;text-transform:uppercase}
     .do-today{margin:0 0 27px;padding:16px;border:2px solid var(--ink);background:var(--paper);box-shadow:var(--shadow)}
     .do-today .queue-head{margin-bottom:14px}
+    .reply-inbox{margin:0 0 16px}
+    .reply-inbox-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 10px;padding:0 2px 8px;border-bottom:2px solid var(--danger)}
+    .reply-inbox-title{margin:0;font-size:19px;line-height:1.2;font-weight:700;letter-spacing:-.015em}
+    .reply-inbox-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+    .reply-card .card-body{gap:11px}
+    .reply-meta{display:flex;align-items:center;flex-wrap:wrap;gap:5px 10px;color:var(--muted);font-size:12px}
+    .reply-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;padding-top:11px;border-top:1px solid var(--line)}
+    .reply-form .cold-feedback{grid-column:1/-1}
+    @media(max-width:760px){.reply-inbox-grid{grid-template-columns:1fr}.reply-form{grid-template-columns:1fr}.reply-form .action{width:100%}}
     .priority-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:18px;margin:0 0 16px;padding:17px 18px;background:var(--ink);color:var(--paper)}
     .priority-kicker{display:block;margin-bottom:5px;color:var(--amber-soft);font:600 10px "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.07em}
     .priority-title{margin:0 0 7px;font-size:clamp(19px,2.2vw,25px);line-height:1.15;letter-spacing:-.02em}
@@ -817,6 +826,7 @@
 
     <details class="queue do-today collapsible-section jump-target" id="today-section" aria-labelledby="today-heading">
       <summary class="queue-head"><div><h2 id="today-heading">Actionable — today · <span class="section-heading-count" id="today-count">— actions</span></h2></div><div class="section-summary-meta"><span class="section-summary-copy">The daily queue: only work Ashlyn can move today, sorted by live-role relevance.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
+      <div class="reply-inbox section-body" id="reply-inbox" hidden></div>
       <div class="today-stack section-body" id="today-applications"></div>
       <article class="priority-card hpe-screening-priority" aria-labelledby="hpe-screening-priority-title" hidden>
         <div>
@@ -1802,7 +1812,7 @@
         return /(?:hpe\s+)?(?:asynchronous\s+)?screening(?:\s+(?:is|was))?\s+(?:complete|completed|done)|(?:complete|completed|done)\s+(?:the\s+)?(?:hpe\s+)?(?:asynchronous\s+)?screening/i.test(record);
       }
       function renderDoToday(){
-        if(!data.loaded){document.getElementById('today-count').textContent='— actions';document.getElementById('today-applications').innerHTML='';document.getElementById('today-stack').innerHTML='';document.querySelectorAll('.do-today .hpe-screening-priority').forEach(function(card){card.hidden=true;});return;}
+        if(!data.loaded){document.getElementById('today-count').textContent='— actions';document.getElementById('today-applications').innerHTML='';document.getElementById('today-stack').innerHTML='';var replyInboxElEarly=document.getElementById('reply-inbox');if(replyInboxElEarly){replyInboxElEarly.hidden=true;replyInboxElEarly.innerHTML='';}document.querySelectorAll('.do-today .hpe-screening-priority').forEach(function(card){card.hidden=true;});return;}
         var today=browserToday();
         function actionMarkup(items){return items.length?items.join(''):'';}
         function stale(stage,threshold){return data.jobs.filter(function(j){return j.stage===stage;}).map(function(j){var d=latestStatusDate(j),idle=d?daysBetween(today,d):null;return {job:j,idle:idle};}).filter(function(item){return item.idle===null||item.idle>=threshold;}).sort(function(a,b){return (b.idle===null?Infinity:b.idle)-(a.idle===null?Infinity:a.idle);});}
@@ -1860,7 +1870,12 @@
         var visible=(priorityPending?1:0)+wildcardItems.length+fastLaneItems.length+attachItems.length+gapItems.length+routineItems.length+visiblePursuits.length+visibleApplications.length+followupItems.length+peopleNudgeItems.length+coldDue.length;
         document.getElementById('today-applications').innerHTML=todayBlock('Application routine',routineHtml);
         document.getElementById('today-stack').innerHTML=todayBlock('Fast lane',fastLaneHtml)+todayBlock('Outreach actions',coldHtml)+todayBlock('Wildcard decision',wildcardHtml)+todayBlock('Attach connections',attachHtml)+todayBlock('Connection gaps',gapHtml)+todayBlock('Applied follow-ups',followupHtml)+todayBlock('People nudges',peopleNudgeHtml)+todayBlock('Stale applications in progress',pursuitHtml)+todayBlock('Stale monitored applications',applicationHtml);
-        document.getElementById('today-count').textContent=(visible===total?String(total):visible+' of '+total)+' Actionable'+(total===1?'':'s');bindTodayLinks();bindColdOutreachControls(document.getElementById('today-section'));renderWaiting();
+        var replyInboxItems=replyInboxContacts(),replyInboxEl=document.getElementById('reply-inbox');
+        if(replyInboxEl){
+          if(replyInboxItems.length){replyInboxEl.hidden=false;replyInboxEl.innerHTML='<div class="reply-inbox-head"><h3 class="reply-inbox-title">Reply inbox</h3><span class="count">'+replyInboxItems.length+' waiting</span></div><div class="reply-inbox-grid">'+replyInboxItems.map(function(contact,index){return replyInboxCard(contact,index);}).join('')+'</div>';}
+          else{replyInboxEl.hidden=true;replyInboxEl.innerHTML='';}
+        }
+        document.getElementById('today-count').textContent=(visible===total?String(total):visible+' of '+total)+' Actionable'+(total===1?'':'s');bindTodayLinks();bindColdOutreachControls(document.getElementById('today-section'));bindReplyInboxControls(document.getElementById('today-section'));renderWaiting();
       }
       function empty(text){return '<div class="empty">'+esc(text)+'</div>';}
       function meetsMinimum(value,minimum){var scoreValue=num(value);return scoreValue===null?minimum===0:scoreValue>=minimum;}
@@ -2745,6 +2760,46 @@
           personHtml=(person.warm?'<div><span class="warm-badge">Warm path</span></div>':'')+'<div class="person-facts"><div class="fact"><span>Days since last touch</span><strong>'+esc(days)+'</strong></div><div class="fact"><span>Next nudge</span><strong>'+esc(formatDate(nextNudge))+'</strong></div></div><div><div class="label">Live roles</div>'+roles+'</div><form class="touch-form"><label class="sr-only" for="'+touchId+'-channel">Channel</label><select class="field" id="'+touchId+'-channel" name="channel"><option>LinkedIn</option><option>Email</option><option>In-person</option><option>Other</option></select><div class="response-group" role="group" aria-label="Response received"><button type="button" class="response-option" data-response="Yes" aria-pressed="false">Response: Yes</button><button type="button" class="response-option" data-response="No" aria-pressed="true">No</button></div><label class="sr-only" for="'+touchId+'-summary">Touch summary</label><input class="field wide" id="'+touchId+'-summary" name="summary" type="text" placeholder="Short summary" required><label class="sr-only" for="'+touchId+'-nudge">Next nudge date</label><input class="field" id="'+touchId+'-nudge" name="nextNudge" type="date" value="'+defaultNudgeDate()+'"><button type="submit" class="action primary">Log a touch</button><p class="outreach-feedback wide" role="status" aria-live="polite"></p></form>';
         }
         return '<article id="cold-card-'+esc(contact.row)+'" class="card cold-card" data-row="'+esc(contact.row)+'" data-person="'+esc(contact.name)+'" data-company="'+esc(contact.company)+'" data-search="'+esc((contact.name+' '+contact.company+' '+contact.title+' '+coldSegmentLabel(contact.segment)+' '+contact.state+(contact.state==='IDENTIFIED'?' suggested':'')).toLowerCase())+'"><div class="card-head"><div class="topline"><span class="company">Contact · '+esc(contact.company||'Company not listed')+'</span><span class="stage cold-state state-'+esc(contact.state.toLowerCase().replace(/_/g,'-'))+'">'+esc(contact.state==='INMAIL_SENT'?'InMail sent':contact.state==='IDENTIFIED'?'Suggested':statusDisplay(contact.state))+'</span></div><h3 class="cold-name">'+profile+'</h3><p class="cold-title">'+esc(contact.title||'Title not listed')+'</p></div><div class="card-body"><div><span class="cold-segment">'+esc(coldSegmentLabel(contact.segment))+'</span>'+pathBadge+'</div><div class="cold-facts"><div class="fact"><span>Next action</span><strong>'+esc(coldNextAction(contact))+'</strong></div><div class="fact"><span>Due</span><strong>'+esc(formatDate(effectiveColdDue(contact)))+'</strong></div></div>'+personHtml+templateBlock+logMessageControl({name:contact.name,company:contact.company,title:contact.title,linkedin:contact.url})+'<div class="cold-actions">'+coldActionButtons(contact)+'</div>'+replyFootnote+'<p class="cold-feedback" role="status" aria-live="polite"></p></div></article>';
+      }
+      var REPLY_INBOX_CLOSURE_MARKERS=['thread closed','closed warmly','no action pending','no bump','thanked him','thanked her','thank-you sent','thank you sent','resume sent','closer was sent','thread is with him','thread is with her'];
+      function replyInboxContacts(){
+        if(!coldOutreach.available||!Array.isArray(coldOutreach.contacts))return [];
+        var today=browserToday();
+        return coldOutreach.contacts.filter(function(contact){
+          if(contact.state!=='REPLIED')return false;
+          var replied=dateOnly(contact.stateDate);if(!replied)return false;
+          var age=daysBetween(today,replied);if(age<0||age>30)return false;
+          var next=String(contact.nextAction||'').toLowerCase();
+          return !REPLY_INBOX_CLOSURE_MARKERS.some(function(marker){return next.indexOf(marker)>=0;});
+        }).sort(function(a,b){return (calendarDay(a.stateDate)||0)-(calendarDay(b.stateDate)||0);});
+      }
+      function replyInboxCard(contact,index){
+        var replied=dateOnly(contact.stateDate),due=replied?new Date(replied.getFullYear(),replied.getMonth(),replied.getDate()+2):null,todayDay=calendarDay(browserToday()),dueDay=due?calendarDay(due):null,overdueDays=dueDay!==null&&todayDay>dueDay?Math.round((todayDay-dueDay)/86400000):0;
+        var chip=overdueDays?'<span class="tag overdue">'+overdueDays+'d overdue</span>':'<span class="tag due">Reply by '+esc(formatDate(due))+'</span>';
+        var inputId='reply-inbox-sent-'+index+'-'+String(contact.row||'').replace(/[^A-Za-z0-9_-]/g,'-');
+        return '<article class="card reply-card" data-row="'+esc(contact.row)+'" data-person="'+esc(contact.name)+'" data-company="'+esc(contact.company)+'"><div class="card-head"><div class="topline"><span class="company">'+esc(contact.company||'Company not listed')+'</span>'+chip+'</div><h3 class="cold-name">'+esc(contact.name||'Unnamed contact')+'</h3><p class="cold-title">'+esc(contact.title||'Title not listed')+'</p></div><div class="card-body"><div class="reply-meta"><span>Replied '+esc(formatDate(contact.stateDate))+'</span></div>'+(contact.nextAction?'<div><p class="label">What she owes</p><p class="copy">'+esc(contact.nextAction)+'</p></div>':'')+'<form class="reply-form"><label class="sr-only" for="'+esc(inputId)+'">What she sent</label><input class="field" id="'+esc(inputId)+'" name="summary" type="text" placeholder="What she sent" required><button type="submit" class="action primary">Log reply</button><p class="cold-feedback" role="status" aria-live="polite"></p></form></div></article>';
+      }
+      function bindReplyInboxControls(root){
+        if(!root)return;
+        root.querySelectorAll('.reply-form').forEach(function(form){
+          if(form.dataset.bound)return;form.dataset.bound='true';
+          form.addEventListener('submit',function(e){
+            e.preventDefault();
+            var card=form.closest('.reply-card'),button=form.querySelector('[type="submit"]'),line=form.querySelector('.cold-feedback'),row=card?card.dataset.row:'',contact=coldOutreach.contacts.filter(function(item){return String(item.row)===String(row);})[0];
+            if(!contact)return;
+            var summary=form.elements.summary.value.trim();
+            if(!summary){if(line){line.className='cold-feedback error';line.textContent='Add a short summary.';}form.elements.summary.focus();return;}
+            button.disabled=true;if(line){line.className='cold-feedback';line.textContent='Logging reply…';}
+            outreachPost('peopleTouch',{name:contact.name,company:contact.company,channel:'LinkedIn',summary:summary,response:'Yes',nextNudge:''}).then(function(){
+              return coldOutreachPost('outreachAdvance',{row:contact.row,event:'in_conversation',message:summary,path:contact.path||'connection',nextAction:'Engage as needed',nextDue:''});
+            }).then(function(){
+              if(line){line.className='cold-feedback success';line.textContent='Reply logged. Refreshing…';}
+              loadColdOutreachData();
+            }).catch(function(error){
+              button.disabled=false;if(line){line.className='cold-feedback error';line.textContent=error&&error.message?error.message:'Could not log this reply.';}
+            });
+          });
+        });
       }
       function coldActiveContacts(){return coldOutreach.contacts.filter(function(contact){return contact.state!=='REPLIED'&&contact.state!=='CLOSED';});}
       function coldDueContacts(){var today=calendarDay(browserToday());return coldActiveContacts().filter(function(contact){
