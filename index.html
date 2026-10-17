@@ -3578,11 +3578,8 @@
             if(isColdProspect)return;
             if(due)items.push({rank:lowConfidence?5:(appliedCompany?1.75:2),tie:next||0,title:'Reach out to '+person.name,context:(person.company||'Company not listed')+' · find the right role or team connection',minutes:10,outreach:true,company:person.company,search:person.name+' '+person.company});
             else backlog++;
-          }else if(due){
-            items.push({rank:lowConfidence?5:(appliedCompany?1.75:2),tie:next||0,title:'Nudge '+person.name,context:(person.company||'Company not listed')+' · relationship follow-up due',minutes:10,outreach:true,company:person.company,search:person.name+' '+person.company});
           }
         });
-        companies.forEach(function(company,index){var name=String(val(company,'company')||''),actionStatus=String(val(company,'actionStatus')||''),checkDue=/check\s*now/i.test(actionStatus);if(checkDue){items.push({rank:4,tie:index,title:'Check company watch',context:name+' · career-site review due',minutes:10,target:'company-watch-section',search:name});}});
         // Actionable shows daily and is ordered by live-role relevance
         // first: contacts at a company with a live interview (ABB this week)
         // or a live application ride on top, ahead of equally urgent work at
