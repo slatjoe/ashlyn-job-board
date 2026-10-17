@@ -312,6 +312,20 @@
     .portal-check-actions .action{min-height:34px;padding:6px 9px}
     .portal-check-feedback{grid-column:1/-1;color:var(--muted);font:500 10px "IBM Plex Mono",monospace}
     .portal-check-feedback.error{color:var(--danger)}
+    .session-item{align-items:start}
+    .session-expand{margin-top:8px}
+    .session-expand>summary{cursor:pointer;list-style:none;color:var(--blue);font-size:13px;font-weight:700;padding:4px 0}
+    .session-expand>summary::-webkit-details-marker{display:none}
+    .session-expand>summary:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+    .session-list{display:grid;gap:0;list-style:none;margin:4px 0 0;padding:0}
+    .session-app{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
+    .session-app-copy{min-width:0;overflow-wrap:anywhere}
+    .session-app .action{min-height:32px;padding:5px 9px;font-size:12px;white-space:nowrap}
+    .session-controls{flex-wrap:wrap}
+    .session-feedback{flex-basis:100%;color:var(--muted);font:500 10px "IBM Plex Mono",monospace;text-align:right}
+    .session-feedback.error{color:var(--danger)}
+    .session-feedback.success{color:var(--success)}
+    @media(max-width:760px){.session-feedback{text-align:left}.session-app{align-items:flex-start}}
     .minutes{font:600 10px "IBM Plex Mono",monospace;color:var(--muted);white-space:nowrap}
     .focus-control{display:inline-flex;align-items:center;gap:5px;margin-left:8px;vertical-align:middle}
     .focus-control button{display:grid;place-items:center;width:27px;height:27px;padding:0;border:1px solid var(--line);background:var(--paper);color:var(--green);font-weight:700;cursor:pointer}
@@ -1003,6 +1017,7 @@
       function normalizeFollowup(row){
         row=row||{};
         var thread={reqId:String(val(row,'reqId','req_id','Req ID')||''),company:String(val(row,'company','Company')||''),role:String(val(row,'role','title','Role')||''),appliedDate:val(row,'appliedDate','applied_date','Applied Date'),lastAction:val(row,'lastAction','last_action','Last Action'),lastActionDate:val(row,'lastActionDate','last_action_date','Last Action Date'),nextAction:val(row,'nextAction','next_action','Next Action'),dueDate:val(row,'dueDate','due_date','Due Date'),status:String(val(row,'status','Status')||''),outcomeNotes:val(row,'outcomeNotes','outcome_notes','Outcome Notes')};
+        thread.rawNextAction=String(thread.nextAction||'');
         if(/^active$/i.test(thread.status)){
           var statusText=portalStatusText(thread);
           thread.nextAction='Check portal status';
@@ -1171,6 +1186,14 @@
         return items.map(function(item,index){
           var category=String(item.category||''),heading='';
           if(category&&category!==lastCategory){heading='<li class="up-next-category'+(category==='Response Required'?' response-required':'')+'" aria-label="'+esc(category)+'">'+esc(category)+'</li>';lastCategory=category;}
+          if(item.session){
+            var sessionApps=(item.sessionMembers||[]).map(function(member){
+              var appLabel=esc(member.role||'Role not listed')+(member.reqId?' · Req '+esc(member.reqId):'');
+              var appOpen=member.target?'<button type="button" class="action queue-jump" data-target="'+esc(member.target)+'" data-req="'+esc(member.reqId||'')+'">Open</button>':'';
+              return '<li class="session-app"><span class="session-app-copy">'+appLabel+'</span>'+appOpen+'</li>';
+            }).join('');
+            return heading+'<li class="up-next-item session-item" data-search="'+esc(String(item.search||item.context||item.title).toLowerCase())+'"><span class="up-next-number">'+(index+1+startIndex)+'</span><span class="up-next-copy"><strong>'+esc(item.title)+'</strong><span class="up-next-context">'+esc(item.context||'')+'</span><details class="session-expand"><summary>Show '+(item.sessionMembers||[]).length+' applications</summary><ul class="session-list">'+sessionApps+'</ul></details></span><span class="up-next-controls session-controls"><span class="minutes">~'+item.minutes+' min</span><button type="button" class="action primary queue-session-log" data-session="'+esc(item.sessionId||'')+'">Log session</button><span class="session-feedback" role="status" aria-live="polite"></span></span></li>';
+          }
           return heading+'<li class="up-next-item" data-search="'+esc(String(item.search||item.context||item.title).toLowerCase())+'"><span class="up-next-number">'+(index+1+startIndex)+'</span><span class="up-next-copy"><strong>'+esc(item.title)+'</strong><span class="up-next-context">'+esc(item.context||'')+'</span></span><span class="up-next-controls"><span class="minutes">~'+item.minutes+' min</span>'+queueButton(item)+'</span></li>';
         }).join('');
       }
@@ -1306,8 +1329,40 @@
         focus.forEach(function(j,index){if(!scoreFilterAllows(j)||hasResponseRequired(j))return;var progress=applicationProgress(j);if(!progress)return;var delta=deadlineDelta(j),urgent=delta!==null&&delta<=2;
           items.push({rank:urgent?20:(progress.done>0?21:22),tie:urgent?delta*100+index:(progress.done>0?-progress.done*100+index:index),category:'Apply for jobs',title:progress.label,context:j.company+' — '+j.title+(urgent?' · '+(delta<0?Math.abs(delta)+' day overdue':delta===0?'due today':'due in '+delta+' day'+(delta===1?'':'s')):''),minutes:progress.minutes,url:progress.url,outreach:progress.outreach,reqId:j.reqId,company:j.company,target:jobAnchorId(j),search:j.company+' '+j.title});
         });
-        if(outreach.available)activeOutreachThreads().forEach(function(thread,index){var due=calendarDay(val(thread,'dueDate')),delta=due===null?null:Math.round((due-calendarDay(today))/86400000);if(delta!==null&&delta<=0){var found=findJob(val(thread,'reqId')),action=followupActionLabel(val(thread,'nextAction'))||'Follow up',company=val(thread,'company')||'',role=val(thread,'role')||'',timing=delta<0?Math.abs(delta)+' day'+(Math.abs(delta)===1?'':'s')+' overdue':'Due today',portalPrompt=appliedPortalCheckPrompt(thread,found);if((!found||!hasResponseRequired(found.job))&&(!found||scoreFilterAllows(found.job)))items.push({rank:portalPrompt?25:30,tie:delta*100+index,category:'Application follow-ups',portalCheck:!!portalPrompt,title:(portalPrompt||action)+' — '+company+' · '+role,context:portalPrompt?portalCheckInstruction()+' · '+timing:timing,minutes:10,followup:action,reqId:val(thread,'reqId'),target:found?jobAnchorId(found.job):'',search:company+' '+role});}});
-        if(query)items=items.filter(function(item){return headerMatch(item.search||'',query)||reqIdSearchHit(item.reqId,query);});
+        if(outreach.available){
+          var dueFollowups=[];
+          activeOutreachThreads().forEach(function(thread,index){
+            var due=calendarDay(val(thread,'dueDate')),delta=due===null?null:Math.round((due-calendarDay(today))/86400000);
+            if(delta===null||delta>0)return;
+            var found=findJob(val(thread,'reqId'));
+            if(found&&hasResponseRequired(found.job))return;
+            if(found&&!scoreFilterAllows(found.job))return;
+            var action=followupActionLabel(val(thread,'nextAction'))||'Follow up',company=val(thread,'company')||'',role=val(thread,'role')||'',timing=delta<0?Math.abs(delta)+' day'+(Math.abs(delta)===1?'':'s')+' overdue':'Due today',portalPrompt=appliedPortalCheckPrompt(thread,found);
+            dueFollowups.push({thread:thread,index:index,delta:delta,found:found,action:action,company:company,role:role,timing:timing,portalPrompt:portalPrompt,check:isCheckFollowup(thread),reqId:val(thread,'reqId'),target:found?jobAnchorId(found.job):''});
+          });
+          var pushFollowupItem=function(candidate){
+            items.push({rank:candidate.portalPrompt?25:30,tie:candidate.delta*100+candidate.index,category:'Application follow-ups',portalCheck:!!candidate.portalPrompt,title:(candidate.portalPrompt||candidate.action)+' — '+candidate.company+' · '+candidate.role,context:candidate.portalPrompt?portalCheckInstruction()+' · '+candidate.timing:candidate.timing,minutes:10,followup:candidate.action,reqId:candidate.reqId,target:candidate.target,search:candidate.company+' '+candidate.role});
+          };
+          // Due check-type threads collapse into one session per company when
+          // a company has two or more of them; singles and every non-check
+          // follow-up keep the individual rendering above.
+          var checkGroups={},checkOrder=[];
+          dueFollowups.forEach(function(candidate){
+            if(!candidate.check||!companyKey(candidate.company)){pushFollowupItem(candidate);return;}
+            var key=companyKey(candidate.company);
+            if(!checkGroups[key]){checkGroups[key]=[];checkOrder.push(key);}
+            checkGroups[key].push(candidate);
+          });
+          checkOrder.forEach(function(key){
+            var members=checkGroups[key];
+            if(members.length<2){pushFollowupItem(members[0]);return;}
+            members.sort(function(a,b){return a.delta-b.delta||a.index-b.index;});
+            var company=members[0].company,sharedLabel=ownFollowupLabel(members[0].thread)||members[0].action,overdueCount=members.filter(function(member){return member.delta<0;}).length,oldest=members[0],anyPortal=members.some(function(member){return !!member.portalPrompt;}),sessionId=registerSessionGroup(members.map(function(member){return member.thread;}));
+            var overdueText=overdueCount?overdueCount+' of '+members.length+' overdue · oldest due '+formatDate(val(oldest.thread,'dueDate')):'None overdue · oldest due '+formatDate(val(oldest.thread,'dueDate'));
+            items.push({rank:anyPortal?25:30,tie:oldest.delta*100+oldest.index,category:'Application follow-ups',session:true,sessionId:sessionId,company:company,title:sharedLabel+' — '+company+' · '+members.length+' applications',context:(anyPortal?portalCheckInstruction()+' · ':'')+overdueText,minutes:10,sessionMembers:members.map(function(member){return {role:member.role,reqId:member.reqId,target:member.target};}),sessionReqIds:members.map(function(member){return member.reqId;}),search:company+' '+sharedLabel+' '+members.map(function(member){return member.role+' '+member.reqId;}).join(' ')});
+          });
+        }
+        if(query)items=items.filter(function(item){return headerMatch(item.search||'',query)||reqIdSearchHit(item.reqId,query)||(item.sessionReqIds||[]).some(function(id){return reqIdSearchHit(id,query);});});
         // Pick top 5 by pyramid tier (rank), then live-role relevance (an
         // interviewing or applied company outranks a cold one), then urgency.
         // Waiting-on-them items never enter this queue: every tier above is
@@ -1331,6 +1386,20 @@
         root.querySelectorAll('.queue-outreach').forEach(function(button){button.addEventListener('click',function(){setView('outreach');var search=document.getElementById('outreach-search');search.value=button.dataset.company||'';outreachQuery=search.value.toLowerCase();applyOutreachSearch();search.focus();});});
         root.querySelectorAll('.queue-outreach-thread').forEach(function(button){button.addEventListener('click',function(){focusOutreachPerson(button.dataset.person||'',button.dataset.target||'');});});
         root.querySelectorAll('.queue-followup').forEach(function(button){button.addEventListener('click',function(){if(button.disabled)return;var thread=outreach.threads.filter(function(item){return String(val(item,'reqId'))===String(button.dataset.req);})[0]||{};button.disabled=true;button.textContent='Saving…';completeFollowup(thread,'','').then(function(){loadOutreachData();}).catch(function(){button.disabled=false;button.textContent='Try again';});});});
+        root.querySelectorAll('.queue-session-log').forEach(function(button){button.addEventListener('click',function(){
+          if(button.disabled)return;
+          var threads=upNextSessionGroups[button.dataset.session||'']||[],item=button.closest('.up-next-item'),feedback=item?item.querySelector('.session-feedback'):null;
+          if(!threads.length){if(feedback){feedback.className='session-feedback error';feedback.textContent='Session unavailable. Refresh the board and try again.';}return;}
+          button.disabled=true;button.textContent='Logging…';
+          if(feedback){feedback.className='session-feedback';feedback.textContent='Logging session for '+threads.length+' applications…';}
+          logFollowupSession(threads).then(function(){
+            if(feedback){feedback.className='session-feedback success';feedback.textContent='Session logged. Refreshing…';}
+            loadOutreachData();
+          }).catch(function(){
+            button.disabled=false;button.textContent='Log session';
+            if(feedback){feedback.className='session-feedback error';feedback.textContent='Could not log the session. Please try again.';}
+          });
+        });});
         bindActionControls(root);
       }
       function jobLink(j,primary,label){return j.url?'<a class="action posting-link'+(primary?' primary':'')+'" href="'+esc(j.url)+'" target="_blank" rel="noopener noreferrer" data-req="'+esc(j.reqId)+'">'+esc(label||'View posting')+' ↗</a>':'';}
@@ -2964,6 +3033,28 @@
         var label=String(value||'').trim();
         if(!label||/check|confirm|receipt|find|nudge|close[ -]?out|day\s*\d+/i.test(label))return 'Check portal status';
         return label;
+      }
+      function ownFollowupLabel(thread){
+        if(!thread)return '';
+        var raw=thread.rawNextAction;
+        return String(raw!==undefined&&raw!==null?raw:(thread.nextAction||'')).trim();
+      }
+      function isCheckFollowup(thread){
+        // A check-type follow-up is one portal/email/status pass that can be
+        // worked as a single company session: its own Next Action label names
+        // a portal, or starts with "Check email" / "Check status". Day-1
+        // receipt, check-in, nudge and close-out labels are not check type.
+        var label=ownFollowupLabel(thread).toLowerCase();
+        return !!label&&(label.indexOf('portal')>=0||label.indexOf('check email')===0||label.indexOf('check status')===0);
+      }
+      var upNextSessionGroups={},upNextSessionSeq=0;
+      function registerSessionGroup(threads){var id='session-'+(++upNextSessionSeq);upNextSessionGroups[id]=threads;return id;}
+      function logFollowupSession(threads){
+        var nextDue=addDaysIso(localIsoDate(),14);
+        return Promise.all(threads.map(function(thread){
+          var label=ownFollowupLabel(thread)||'Check portal status';
+          return outreachPost('outreachLog',{reqId:val(thread,'reqId'),actionLabel:label,note:'Session check',nextDue:nextDue,nextAction:label,dueDate:nextDue,status:'Active'});
+        }));
       }
       function portalCheckDetails(value){
         var company=String(value||'').trim();
