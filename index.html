@@ -2954,12 +2954,22 @@
       // Every person appears exactly once, in exactly one of three groups.
       // Sources: Contacts (outreachData), Connections sheet, UNCC_Prospects.
       // A Contacts record governs group and state when one exists.
+      function isGracefulCloseAction(text){return /graceful\s*close/i.test(String(text||''));}
+      function isWithdrawnCloseAction(text){return /withdraw|re[-\s]?invite|re[-\s]?send|lockout|invite\s+again|new\s+invit/i.test(String(text||''));}
       function classifyMergedPerson(rec){
         var today=browserToday(),todayDay=calendarDay(today);
         if(rec.contact){
           var c=rec.contact,state=String(c.state||'').trim().toUpperCase().replace(/[\s-]+/g,'_'),dueRaw=String(c.nextDue||'');
           if(state==='IDENTIFIED')return {group:'potential',stateLabel:'Not yet invited',nextAction:c.nextAction||'Send connection request',nextDue:dueRaw};
           if(state==='CLOSED'){
+            // Split by close type from the Next Action text: a graceful close
+            // (an accepted connection closed with a message) is simply closed
+            // and excluded like every other CLOSED row. Only a row whose Next
+            // Action indicates a withdrawn invitation earns the re-invite
+            // lockout / ready-to-re-invite treatment in Potential.
+            var closeAction=String(c.nextAction||'');
+            if(isGracefulCloseAction(closeAction))return {excluded:true};
+            if(!isWithdrawnCloseAction(closeAction))return {excluded:true};
             var dueDay=calendarDay(dueRaw);
             if(dueDay!==null&&dueDay>todayDay)return {group:'potential',stateLabel:'In withdraw lockout until '+formatDate(dueRaw),nextAction:'Re-invite after '+formatDate(dueRaw),nextDue:dueRaw,lockout:true};
             if(dueDay!==null&&dueDay<=todayDay)return {group:'potential',stateLabel:'Ready to re-invite',nextAction:'Send connection request',nextDue:dueRaw};
@@ -3029,6 +3039,17 @@
         if(isHeldCompany(rec.company))add('held — live process','Held — live process');
         return tags;
       }
+      // Explicit state priority for merging duplicate Contacts rows for the
+      // same person: live states always outrank CLOSED duplicates, so the
+      // person's live state governs regardless of sheet row order. Lower
+      // number wins. Conversation states rank highest, then accepted /
+      // follow-up states, then open requests, then not-yet-invited, with
+      // CLOSED last.
+      function mergedContactStatePriority(contact){
+        var s=String(contact&&contact.state||'').trim().toUpperCase().replace(/[\s-]+/g,'_');
+        var priorities={IN_CONVERSATION:0,REPLIED:1,MEETING_SCHEDULED:2,MEETING:2,INTERVIEW:2,CONNECTED:3,ACCEPTED:4,CLOSE_DUE:5,BUMP_DUE:6,BUMP_SENT:7,DM2_SENT:7,DM_BUMP_SENT:7,INMAIL_SENT:8,REQUEST_SENT:9,STALE:10,IDENTIFIED:11,CLOSED:12};
+        return Object.prototype.hasOwnProperty.call(priorities,s)?priorities[s]:11;
+      }
       function buildMergedPeople(){
         var records=[];
         function findRecord(name,company){
@@ -3045,7 +3066,14 @@
         }
         if(coldOutreach.available)(coldOutreach.contacts||[]).forEach(function(contact){
           if(!contact||!contact.name)return;var rec=ensure(contact.name,contact.company);if(!rec)return;
-          if(!rec.contact){rec.contact=contact;rec.company=contact.company||rec.company;rec.title=contact.title||rec.title;rec.linkedin=contact.url||rec.linkedin;rec.segment=contact.segment||rec.segment;}
+          if(!rec.contact||mergedContactStatePriority(contact)<mergedContactStatePriority(rec.contact)){
+            rec.contact=contact;rec.company=contact.company||rec.company;rec.title=contact.title||rec.title;rec.linkedin=contact.url||rec.linkedin;rec.segment=contact.segment||rec.segment;
+          }else{
+            if(!rec.title&&contact.title)rec.title=contact.title;
+            if(!rec.linkedin&&contact.url)rec.linkedin=contact.url;
+            if(!rec.company&&contact.company)rec.company=contact.company;
+            if(!rec.segment&&contact.segment)rec.segment=contact.segment;
+          }
         });
         if(data.connectionsLoaded)(data.connections||[]).forEach(function(raw){
           var name=contactName(raw);if(!name)return;var rec=ensure(name,contactCompany(raw));if(!rec)return;
@@ -3743,7 +3771,7 @@
             if(age!==null&&age>14){if(entry.live)lanes.bullpenAnchored.push(entry);else lanes.bullpenUnanchored.push(entry);}
             else lanes.pending.push(entry);
           }else if(state==='CLOSED'){
-            if(contact.nextDue)lanes.suspended.push(entry);
+            if(contact.nextDue&&!isGracefulCloseAction(contact.nextAction)&&isWithdrawnCloseAction(contact.nextAction))lanes.suspended.push(entry);
           }else if(state==='ACCEPTED')lanes.dm2.push(entry);
           else if(state==='BUMP_DUE')lanes.bump.push(entry);
           else if(state==='CLOSE_DUE')lanes.close.push(entry);
@@ -3816,7 +3844,7 @@
               items.push({rank:priority?1.5:2.5,tie:dueDay,category:'Cold outreach',title:'Reach out to '+contact.name,context:(contact.company||'Company not listed')+' — connection request or InMail'+timingSuffix(dueDay),minutes:3,outreachTarget:'cold-card-'+contact.row,person:contact.name,company:contact.company,search:(contact.name||'')+' '+(contact.company||'')});
             }else backlog++;
           });
-          coldOutreach.contacts.filter(function(contact){return contact.state==='CLOSED'&&contact.nextDue;}).forEach(function(contact,index){
+          coldOutreach.contacts.filter(function(contact){return contact.state==='CLOSED'&&contact.nextDue&&!isGracefulCloseAction(contact.nextAction)&&isWithdrawnCloseAction(contact.nextAction);}).forEach(function(contact,index){
             if(isHeldCompany(contact.company))return;
             var unlock=calendarDay(contact.nextDue);
             if(unlock!==null&&unlock<=todayDay)items.push({rank:.8,tie:unlock,category:'Outreach responses',title:'Re-invite '+contact.name,context:(contact.company||'Company not listed')+' — '+(contact.title||'title not listed')+' · re-invite lockout ended '+formatDate(contact.nextDue),minutes:5,outreachTarget:'cold-card-'+contact.row,person:contact.name,company:contact.company,search:(contact.name||'')+' '+(contact.company||'')});
