@@ -362,6 +362,19 @@
     .today-tier:first-child{margin-top:0}
     .today-items{display:grid;gap:7px}
     .today-clear{margin:0;color:var(--green);font-size:13px;font-weight:600}
+    .today-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start}
+    .today-snooze{border:1px solid var(--line);background:transparent;color:var(--muted);padding:5px 8px;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+    .today-snooze:hover{border-color:var(--ink);color:var(--ink)}
+    .today-snooze:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+    .priority-actions{display:grid;gap:8px}
+    .priority-card .today-snooze{border-color:color-mix(in srgb,var(--paper) 55%,transparent);color:var(--paper)}
+    .priority-card .today-snooze:hover{border-color:var(--paper);color:var(--paper)}
+    .portal-company{border:1px solid var(--line);background:color-mix(in srgb,var(--paper) 72%,var(--bg));padding:11px 12px;display:grid;gap:9px}
+    .portal-company-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .portal-company-name{font-size:14px;font-weight:700;overflow-wrap:anywhere}
+    .portal-company-side{display:flex;align-items:center;gap:9px}
+    .portal-company-count{font:600 10px "IBM Plex Mono",monospace;color:var(--muted);white-space:nowrap}
+    .portal-company-list{display:grid;gap:7px}
     .nudge{padding:11px 12px;background:var(--amber-soft);color:var(--ink);border-left:4px solid var(--amber);font-size:13px;line-height:1.45}
     .nudge strong{color:var(--amber)}
     .nudge.overdue{background:var(--danger-soft);border-left-color:var(--danger)}
@@ -842,7 +855,7 @@
           <p class="priority-sequence"><strong>First:</strong> Review the screening prep PDF. <strong>Then:</strong> Complete the HPE asynchronous screening.</p>
           <p class="priority-context">Firmware Engineer Graduate · Req 1213626 · Durham / RTP · invitation received Sep 28</p>
         </div>
-        <a class="priority-action" href="https://drive.google.com/file/d/1vRMB-Dl8bkC5E3YwkJjODHv06bikh9yj/view?usp=drivesdk" target="_blank" rel="noopener noreferrer">Open screening prep PDF</a>
+        <div class="priority-actions"><a class="priority-action" href="https://drive.google.com/file/d/1vRMB-Dl8bkC5E3YwkJjODHv06bikh9yj/view?usp=drivesdk" target="_blank" rel="noopener noreferrer">Open screening prep PDF</a><button type="button" class="today-snooze" data-snooze-id="priority:hpe-screening">Snooze 7 days</button></div>
       </article>
       <div class="today-stack section-body" id="today-stack"></div>
     </details>
@@ -1759,6 +1772,21 @@
         if(!j||!linkable)return '<div class="'+classes+'">'+content+'</div>';
         var target=jobAnchorId(j);return '<a class="'+classes+' today-link" href="#'+esc(target)+'" data-target="'+esc(target)+'" data-req="'+esc(j.reqId||'')+'">'+content+'</a>';
       }
+      // Snooze for Actionable — today cards that have no backend completion:
+      // a card id hidden for 7 days, persisted in localStorage.
+      var TODAY_SNOOZE_KEY='ashlyn-job-board-today-snoozes-v1';
+      function todaySnoozeStore(){try{var parsed=JSON.parse(localStorage.getItem(TODAY_SNOOZE_KEY)||'{}');return parsed&&typeof parsed==='object'?parsed:{};}catch(e){return {};}}
+      function isTodaySnoozed(id){if(!id)return false;var until=todaySnoozeStore()[id];return typeof until==='number'&&until>Date.now();}
+      function snoozeTodayCard(id){if(!id)return;var store=todaySnoozeStore();store[id]=Date.now()+7*24*60*60*1000;try{localStorage.setItem(TODAY_SNOOZE_KEY,JSON.stringify(store));}catch(e){}}
+      function todaySnoozeButton(id){return '<button type="button" class="today-snooze" data-snooze-id="'+esc(id)+'">Snooze 7 days</button>';}
+      function snoozableItem(html,id){return '<div class="today-item">'+html+todaySnoozeButton(id)+'</div>';}
+      function bindTodaySnoozes(root){
+        if(!root)return;
+        root.querySelectorAll('.today-snooze').forEach(function(button){
+          if(button.dataset.snoozeBound)return;button.dataset.snoozeBound='true';
+          button.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();snoozeTodayCard(button.dataset.snoozeId||'');renderDoToday();});
+        });
+      }
       function openCardConnections(target){var card=target&&target.matches&&target.matches('.card')?target:target&&target.closest?target.closest('.card'):null,connections=card&&card.querySelector('.connections');if(connections)connections.open=true;}
       function jobByAnchor(anchorId){if(!anchorId)return null;for(var i=0;i<data.jobs.length;i++){if(jobAnchorId(data.jobs[i])===anchorId)return data.jobs[i];}return null;}
       function clearScoreFiltersNow(){
@@ -1818,39 +1846,85 @@
         var today=browserToday();
         function actionMarkup(items){return items.length?items.join(''):'';}
         function stale(stage,threshold){return data.jobs.filter(function(j){return j.stage===stage;}).map(function(j){var d=latestStatusDate(j),idle=d?daysBetween(today,d):null;return {job:j,idle:idle};}).filter(function(item){return item.idle===null||item.idle>=threshold;}).sort(function(a,b){return (b.idle===null?Infinity:b.idle)-(a.idle===null?Infinity:a.idle);});}
-        function staleHtml(items,verb){return items.map(function(item){var idle=item.idle===null?'activity date missing':item.idle+' day'+(item.idle===1?'':'s')+' idle';return todayNudge('<strong>'+esc(item.job.company)+' — '+esc(item.job.title)+': '+esc(idle)+'.</strong> '+esc(verb),item.job,'overdue',true);});}
+        function staleHtml(items,verb,idPrefix){return items.map(function(item){var idle=item.idle===null?'activity date missing':item.idle+' day'+(item.idle===1?'':'s')+' idle';var html=todayNudge('<strong>'+esc(item.job.company)+' — '+esc(item.job.title)+': '+esc(idle)+'.</strong> '+esc(verb),item.job,'overdue',true);return idPrefix?snoozableItem(html,idPrefix+focusKey(item.job)):html;});}
 
-        var wildcards=data.jobs.filter(function(j){return isWildcard(j)&&!heldOutOfDoToday(j);}).sort(newerFirst),latest=wildcards[0]||null,wildcardPending=!!(latest&&!isDecided(latest)),wildcardItems=[];
-        if(wildcardPending&&filtered(latest)){var wildcardDay=dateOnly(latest.dateScraped),past=wildcardDay&&calendarDay(wildcardDay)<calendarDay(today),message=past?"Yesterday's wildcard still needs a decision.":"Decide on today's wildcard.";wildcardItems.push(todayNudge('<strong>'+esc(message)+'</strong> Open '+esc(latest.company)+' — '+esc(latest.title)+' and make the call now.',latest,past?'overdue':'',true));}
+        var wildcards=data.jobs.filter(function(j){return isWildcard(j)&&!heldOutOfDoToday(j);}).sort(newerFirst),latest=wildcards[0]||null,wildcardPending=!!(latest&&!isDecided(latest)),wildcardSnoozeId=latest?'wildcard:'+focusKey(latest):'',wildcardCounted=wildcardPending&&!isTodaySnoozed(wildcardSnoozeId),wildcardItems=[];
+        if(wildcardCounted&&filtered(latest)){var wildcardDay=dateOnly(latest.dateScraped),past=wildcardDay&&calendarDay(wildcardDay)<calendarDay(today),message=past?"Yesterday's wildcard still needs a decision.":"Decide on today's wildcard.";wildcardItems.push(snoozableItem(todayNudge('<strong>'+esc(message)+'</strong> Open '+esc(latest.company)+' — '+esc(latest.title)+' and make the call now.',latest,past?'overdue':'',true),wildcardSnoozeId));}
         var wildcardHtml=actionMarkup(wildcardItems,'All clear — no wildcard decision is waiting.',wildcardPending?1:0);
 
         var fastLane=data.jobs.filter(function(j){return j.stage==='Pursuing'&&!isRemoved(j)&&!heldOutOfDoToday(j)&&num(j.fit)!==null&&num(j.fit)>=65&&num(j.dna)!==null&&num(j.dna)>=7;}).map(function(j){var scraped=dateOnly(j.dateScraped);return {job:j,hoursLeft:scraped?48-((Date.now()-scraped.getTime())/3600000):-Infinity};}).filter(function(item){return item.hoursLeft>0;}).sort(function(a,b){return a.hoursLeft-b.hoursLeft;});
-        var fastLaneItems=fastLane.filter(function(item){return filtered(item.job);}).map(function(item){var j=item.job;return todayNudge('<strong>'+esc(j.company)+' — '+esc(j.title)+': new and strong (Fit '+num(j.fit)+', DNA '+num(j.dna)+').</strong> Apply or drop — about '+Math.ceil(item.hoursLeft)+'h left on the 48-hour clock.',j,item.hoursLeft<=12?'overdue':'',true);});
+        var fastLaneActive=fastLane.filter(function(item){return !isTodaySnoozed('fastlane:'+focusKey(item.job));});
+        var fastLaneItems=fastLaneActive.filter(function(item){return filtered(item.job);}).map(function(item){var j=item.job;return snoozableItem(todayNudge('<strong>'+esc(j.company)+' — '+esc(j.title)+': new and strong (Fit '+num(j.fit)+', DNA '+num(j.dna)+').</strong> Apply or drop — about '+Math.ceil(item.hoursLeft)+'h left on the 48-hour clock.',j,item.hoursLeft<=12?'overdue':'',true),'fastlane:'+focusKey(j));});
         var fastLaneHtml=actionMarkup(fastLaneItems);
 
         var appliedJobs=data.jobs.filter(function(j){return j.stage==='Applied';}).sort(newerFirst),appliedCompanies={},appliedTargets={},gapItems=[];
         appliedJobs.forEach(function(j){var key=companyKey(j.company);if(key&&!appliedCompanies[key])appliedCompanies[key]=j.company;if(key&&!appliedTargets[key])appliedTargets[key]=j;});
-        if(data.connectionsLoaded){Object.keys(appliedCompanies).sort().forEach(function(key){if(!filtered(appliedTargets[key]))return;var company=appliedCompanies[key],count=realCompanyConnections(company).length;if(count<5){var more=5-count;gapItems.push(todayNudge('<strong>'+esc(company)+': '+count+'/5 connections — '+more+' more to go.</strong> Target hiring managers and recruiters with a personal note referencing the role. Blank invites don’t count.',appliedTargets[key],'',true));}});}
+        if(data.connectionsLoaded){Object.keys(appliedCompanies).sort().forEach(function(key){if(!filtered(appliedTargets[key]))return;var company=appliedCompanies[key],count=realCompanyConnections(company).length;if(count<5){var more=5-count,gapId='gap:'+key;if(isTodaySnoozed(gapId))return;gapItems.push(snoozableItem(todayNudge('<strong>'+esc(company)+': '+count+'/5 connections — '+more+' more to go.</strong> Target hiring managers and recruiters with a personal note referencing the role. Blank invites don’t count.',appliedTargets[key],'',true),gapId));}});}
         var gapHtml=data.connectionsLoaded?actionMarkup(gapItems,'All clear — every applied company has at least 5 connections.',gapItems.length):'<p class="connection-state">Checking connection counts…</p>';
 
         var attachJobs=[],attachItems=[],activeStageOrder={Interviewing:0,Applied:1,Pursuing:2};
         if(data.connectionsLoaded){
-          attachJobs=data.jobs.filter(function(j){return /^(?:Applied|Pursuing|Interviewing)$/i.test(String(j.stage||'').trim())&&!isRemoved(j)&&!heldOutOfDoToday(j)&&unattachedConnectionsForJob(j).length>0;}).sort(function(a,b){var ar=Object.prototype.hasOwnProperty.call(activeStageOrder,a.stage)?activeStageOrder[a.stage]:9,br=Object.prototype.hasOwnProperty.call(activeStageOrder,b.stage)?activeStageOrder[b.stage]:9;return ar-br||newerFirst(a,b);});
-          attachJobs.forEach(function(j){if(filtered(j)){var count=unattachedConnectionsForJob(j).length;attachItems.push(todayNudge('<strong>'+esc(j.company)+' — '+esc(j.title)+': attach your connections to this role.</strong> '+count+' '+(count===1?'person is':'people are')+' ready to link.',j,'',true));}});
+          attachJobs=data.jobs.filter(function(j){return /^(?:Applied|Pursuing|Interviewing)$/i.test(String(j.stage||'').trim())&&!isRemoved(j)&&!heldOutOfDoToday(j)&&unattachedConnectionsForJob(j).length>0;}).sort(function(a,b){var ar=Object.prototype.hasOwnProperty.call(activeStageOrder,a.stage)?activeStageOrder[a.stage]:9,br=Object.prototype.hasOwnProperty.call(activeStageOrder,b.stage)?activeStageOrder[b.stage]:9;return ar-br||newerFirst(a,b);}).filter(function(j){return !isTodaySnoozed('attach:'+focusKey(j));});
+          attachJobs.forEach(function(j){if(filtered(j)){var count=unattachedConnectionsForJob(j).length;attachItems.push(snoozableItem(todayNudge('<strong>'+esc(j.company)+' — '+esc(j.title)+': attach your connections to this role.</strong> '+count+' '+(count===1?'person is':'people are')+' ready to link.',j,'',true),'attach:'+focusKey(j)));}});
         }
         var attachHtml=data.connectionsLoaded?actionMarkup(attachItems,'All clear — every active role is linked to its available company connections.',attachJobs.length):'<p class="connection-state">Checking role attachments…</p>';
 
         var focusKeys={};focusPartition(data.jobs.filter(function(item){return item.stage==='Pursuing'&&!isRemoved(item)&&!heldOutOfDoToday(item);})).focus.forEach(function(job){focusKeys[focusKey(job)]=true;});
-        var pursuits=stale('Pursuing',4).filter(function(item){return !!focusKeys[focusKey(item.job)];}),visiblePursuits=pursuits.filter(function(item){return filtered(item.job);});
+        var pursuits=stale('Pursuing',4).filter(function(item){return !!focusKeys[focusKey(item.job)];}).filter(function(item){return !isTodaySnoozed('pursuit:'+focusKey(item.job));}),visiblePursuits=pursuits.filter(function(item){return filtered(item.job);});
         var applications=data.jobs.filter(function(j){return j.stage==='Applied'&&!heldOutOfDoToday(j);}).map(function(j){var d=latestStatusDate(j),idle=d?daysBetween(today,d):null;return {job:j,idle:idle};}).filter(function(item){return item.idle===null||item.idle>=7;}).sort(function(a,b){return (b.idle===null?Infinity:b.idle)-(a.idle===null?Infinity:a.idle);});
-        var visibleApplications=applications.filter(function(item){return filtered(item.job);});
 
-        var followupItems=[],followupTotal=0,peopleNudgeItems=[];
+        var portalThreadLines=[],peopleNudgeItems=[];
         if(outreach.available){
-          activeOutreachThreads().forEach(function(thread){if(query&&!headerMatch((val(thread,'company')||'')+' '+(val(thread,'role')||''),query)&&!reqIdSearchHit(val(thread,'reqId'),query))return;var due=calendarDay(val(thread,'dueDate'));if(due!==null&&due<=calendarDay(today)){followupTotal++;var found=findJob(val(thread,'reqId'));if(!found||scoreFilterAllows(found.job)){var late=due<calendarDay(today),lateDays=late?Math.max(1,Math.round((calendarDay(today)-due)/86400000)):0,target='thread-'+String(val(thread,'reqId')).replace(/[^A-Za-z0-9_-]/g,'-'),action=followupActionLabel(val(thread,'nextAction'))||'Follow up',portalPrompt=appliedPortalCheckPrompt(thread,found),title=(portalPrompt||action)+' — '+val(thread,'company')+' · '+val(thread,'role');followupItems.push('<a class="nudge today-link '+(late?'overdue':'')+'" href="#'+esc(target)+'" data-outreach-target="'+esc(target)+'"><strong>'+esc(title)+'</strong><span class="nudge-meta">'+(portalPrompt?esc(portalCheckInstruction())+' · '+esc(val(thread,'role'))+' · ':'')+(late?lateDays+' day'+(lateDays===1?'':'s')+' overdue':'Due today')+'</span></a>');}}});
-          outreachPeople().forEach(function(person){if(query&&!headerMatch((person.name||'')+' '+(person.company||''),query))return;if(/^(?:Request Sent|Stale)$/i.test(String(person.stage||''))||/^(?:Request Sent|Stale)$/i.test(String(person.connectionStatus||'')))return;var next=person.latest?calendarDay(derivedNextNudge(person)):null;if(next!==null&&next<=calendarDay(today)){var late=next<calendarDay(today);peopleNudgeItems.push('<a class="nudge today-link '+(late?'overdue':'')+'" href="#people-pipeline-section" data-outreach-target="people-pipeline-section" data-person-name="'+esc(person.name)+'"><strong>'+esc(person.name)+' — '+esc(person.company)+(late?': nudge overdue.':': nudge due today.')+'</strong> Open People pipeline and log the touch.</a>');}});
+          activeOutreachThreads().forEach(function(thread){
+            if(query&&!headerMatch((val(thread,'company')||'')+' '+(val(thread,'role')||''),query)&&!reqIdSearchHit(val(thread,'reqId'),query))return;
+            var due=calendarDay(val(thread,'dueDate'));
+            if(due===null||due>calendarDay(today))return;
+            var found=findJob(val(thread,'reqId'));
+            var late=due<calendarDay(today),lateDays=late?Math.max(1,Math.round((calendarDay(today)-due)/86400000)):0,target='thread-'+String(val(thread,'reqId')).replace(/[^A-Za-z0-9_-]/g,'-'),action=followupActionLabel(val(thread,'nextAction'))||'Follow up',portalPrompt=appliedPortalCheckPrompt(thread,found),title=(portalPrompt||action)+' — '+val(thread,'company')+' · '+val(thread,'role');
+            portalThreadLines.push({company:val(thread,'company'),reqId:String(val(thread,'reqId')||''),visible:!found||scoreFilterAllows(found.job),html:'<a class="nudge today-link '+(late?'overdue':'')+'" href="#'+esc(target)+'" data-outreach-target="'+esc(target)+'"><strong>'+esc(title)+'</strong><span class="nudge-meta">'+(portalPrompt?esc(portalCheckInstruction())+' · '+esc(val(thread,'role'))+' · ':'')+(late?lateDays+' day'+(lateDays===1?'':'s')+' overdue':'Due today')+'</span></a>'});
+          });
+          outreachPeople().forEach(function(person){
+            if(query&&!headerMatch((person.name||'')+' '+(person.company||''),query))return;
+            if(/^(?:Request Sent|Stale)$/i.test(String(person.stage||''))||/^(?:Request Sent|Stale)$/i.test(String(person.connectionStatus||'')))return;
+            var next=person.latest?calendarDay(derivedNextNudge(person)):null;
+            if(next!==null&&next<=calendarDay(today)){
+              var late=next<calendarDay(today),nudgeId='person:'+personKey(person.name)+'|'+companyKey(person.company);
+              if(isTodaySnoozed(nudgeId))return;
+              peopleNudgeItems.push(snoozableItem('<a class="nudge today-link '+(late?'overdue':'')+'" href="#people-pipeline-section" data-outreach-target="people-pipeline-section" data-person-name="'+esc(person.name)+'"><strong>'+esc(person.name)+' — '+esc(person.company)+(late?': nudge overdue.':': nudge due today.')+'</strong> Open People pipeline and log the touch.</a>',nudgeId));
+            }
+          });
         }
-        var followupHtml=actionMarkup(followupItems,outreach.available?'All clear — no portal status checks are due.':'Portal status reminders are unavailable right now.',followupTotal);
+        // Portal checks — by company: due follow-up threads and stale
+        // monitored applications merged into one card per company. A req
+        // covered by a due thread is not repeated from the stale list, so
+        // no application appears twice.
+        var portalGroups={},portalOrder=[],portalSeenReq={};
+        function portalAdd(company,reqId,html,visibleMember,matchesQuery){
+          var key=companyKey(company)||'company-not-listed';
+          if(!portalGroups[key]){portalGroups[key]={company:company||'Company not listed',members:[]};portalOrder.push(key);}
+          portalGroups[key].members.push({html:html,visible:visibleMember,matches:matchesQuery});
+          if(reqId)portalSeenReq[reqId]=true;
+        }
+        portalThreadLines.forEach(function(line){if(line.reqId&&portalSeenReq[line.reqId])return;portalAdd(line.company,line.reqId,line.html,line.visible,true);});
+        applications.forEach(function(item){
+          var reqId=String(item.job.reqId||'');
+          if(reqId&&portalSeenReq[reqId])return;
+          var matchesQuery=!query||headerMatch(item.job.company+' '+item.job.title+' '+(item.job.location||'')+' '+reqId,query)||reqIdSearchHit(reqId,query);
+          var idle=item.idle===null?'activity date missing':item.idle+' day'+(item.idle===1?'':'s')+' idle';
+          portalAdd(item.job.company,reqId,todayNudge('<strong>'+esc(item.job.title)+': '+esc(idle)+'.</strong> Follow up today and log the outcome.',item.job,'overdue',true),filtered(item.job),matchesQuery);
+        });
+        var portalCards=[],portalTotal=0,portalVisible=0;
+        portalOrder.forEach(function(key){
+          var group=portalGroups[key];
+          if(!group.members.some(function(member){return member.matches;}))return;
+          if(isTodaySnoozed('portal:'+key))return;
+          portalTotal++;
+          var visibleMembers=group.members.filter(function(member){return member.visible;});
+          if(!visibleMembers.length)return;
+          portalVisible++;
+          portalCards.push('<article class="portal-company"><div class="portal-company-head"><span class="portal-company-name">'+esc(group.company)+'</span><span class="portal-company-side"><span class="portal-company-count">'+group.members.length+' application'+(group.members.length===1?'':'s')+' to check</span>'+todaySnoozeButton('portal:'+key)+'</span></div><div class="portal-company-list">'+visibleMembers.map(function(member){return member.html;}).join('')+'</div></article>');
+        });
+        var portalHtml=portalCards.length?portalCards.join(''):(!outreach.available&&!applications.length?'<p class="connection-state">Portal status reminders are unavailable right now.</p>':'');
         var peopleNudgeHtml=actionMarkup(peopleNudgeItems,outreach.available?'All clear — no people nudges are due.':'People nudges activate with the outreach backend.',peopleNudgeItems.length);
         var coldDue=(coldOutreach.available?coldDueContacts():[]).filter(function(contact){return !isWaitingColdState(contact)&&(!query||headerMatch((contact.company||'')+' '+(contact.name||''),query));}),coldHtml=coldOutreach.available===null?'<p class="connection-state">Loading outreach actions…</p>':coldOutreach.available===false?'<p class="connection-state error">Cold-outreach actions could not be loaded. Refresh the board to try again.</p>':coldDue.length?'<div class="cold-today-grid">'+coldDue.map(function(contact,index){return coldContactCard(contact,index,true);}).join('')+'</div>':'';
 
@@ -1861,23 +1935,22 @@
           else if(!prepared)content='<strong>Tailor the resume and draft the cover note for '+esc(j.company)+'.</strong> Use the coach, then link both Google Docs.';
           else if(!engaged)content='<strong>Log an outreach at '+esc(j.company)+'.</strong> Step 2 needs at least one company or role contact.';
           else content='<strong>Submit the '+esc(j.company)+' application.</strong> The preparation and outreach gates are clear.';
-          routineTotal++;if(filtered(j)){var item=todayNudge(content,j,'',true);tierItems[tier-1].push(item);routineItems.push(item);}});
+          var routineId='routine:'+focusKey(j);if(isTodaySnoozed(routineId))return;routineTotal++;if(filtered(j)){var item=snoozableItem(todayNudge(content,j,'',true),routineId);tierItems[tier-1].push(item);routineItems.push(item);}});
         var tierHtml=[];
         tierItems.forEach(function(list,index){if(list.length){tierHtml.push('<p class="today-tier">'+TIER_HEADINGS[index]+'</p>');tierHtml=tierHtml.concat(list);}});
         var routineHtml=tierHtml.length?tierHtml.join(''):'';
-        var pursuitHtml=actionMarkup(staleHtml(visiblePursuits,'Set the next action and log it today.'),'All clear — nothing overdue.',pursuits.length);
-        var applicationHtml=actionMarkup(staleHtml(visibleApplications,'Follow up today and log the outcome.'),'All clear — nothing overdue.',applications.length);
-        var priorityPending=data.loaded&&!!hpeScreeningJob()&&!hpeScreeningComplete();document.querySelectorAll('.do-today .hpe-screening-priority').forEach(function(card){card.hidden=!priorityPending;});
-        var total=(priorityPending?1:0)+(wildcardPending?1:0)+fastLane.length+attachJobs.length+gapItems.length+routineTotal+pursuits.length+applications.length+followupTotal+peopleNudgeItems.length+coldDue.length;
-        var visible=(priorityPending?1:0)+wildcardItems.length+fastLaneItems.length+attachItems.length+gapItems.length+routineItems.length+visiblePursuits.length+visibleApplications.length+followupItems.length+peopleNudgeItems.length+coldDue.length;
+        var pursuitHtml=actionMarkup(staleHtml(visiblePursuits,'Set the next action and log it today.','pursuit:'),'All clear — nothing overdue.',pursuits.length);
+        var priorityPending=data.loaded&&!!hpeScreeningJob()&&!hpeScreeningComplete()&&!isTodaySnoozed('priority:hpe-screening');document.querySelectorAll('.do-today .hpe-screening-priority').forEach(function(card){card.hidden=!priorityPending;});
+        var total=(priorityPending?1:0)+(wildcardCounted?1:0)+fastLaneActive.length+attachJobs.length+gapItems.length+routineTotal+pursuits.length+portalTotal+peopleNudgeItems.length+coldDue.length;
+        var visible=(priorityPending?1:0)+wildcardItems.length+fastLaneItems.length+attachItems.length+gapItems.length+routineItems.length+visiblePursuits.length+portalVisible+peopleNudgeItems.length+coldDue.length;
         document.getElementById('today-applications').innerHTML=todayBlock('Application routine',routineHtml);
-        document.getElementById('today-stack').innerHTML=todayBlock('Fast lane',fastLaneHtml)+todayBlock('Outreach actions',coldHtml)+todayBlock('Wildcard decision',wildcardHtml)+todayBlock('Attach connections',attachHtml)+todayBlock('Connection gaps',gapHtml)+todayBlock('Applied follow-ups',followupHtml)+todayBlock('People nudges',peopleNudgeHtml)+todayBlock('Stale applications in progress',pursuitHtml)+todayBlock('Stale monitored applications',applicationHtml);
+        document.getElementById('today-stack').innerHTML=todayBlock('Fast lane',fastLaneHtml)+todayBlock('Outreach actions',coldHtml)+todayBlock('Wildcard decision',wildcardHtml)+todayBlock('Attach connections',attachHtml)+todayBlock('Connection gaps',gapHtml)+todayBlock('Portal checks — by company',portalHtml)+todayBlock('People nudges',peopleNudgeHtml)+todayBlock('Stale applications in progress',pursuitHtml);
         var replyInboxItems=replyInboxContacts(),replyInboxEl=document.getElementById('reply-inbox');
         if(replyInboxEl){
           if(replyInboxItems.length){replyInboxEl.hidden=false;replyInboxEl.innerHTML='<div class="reply-inbox-head"><h3 class="reply-inbox-title">Reply inbox</h3><span class="count">'+replyInboxItems.length+' waiting</span></div><div class="reply-inbox-grid">'+replyInboxItems.map(function(contact,index){return replyInboxCard(contact,index);}).join('')+'</div>';}
           else{replyInboxEl.hidden=true;replyInboxEl.innerHTML='';}
         }
-        document.getElementById('today-count').textContent=(visible===total?String(total):visible+' of '+total)+' Actionable'+(total===1?'':'s');bindTodayLinks();bindColdOutreachControls(document.getElementById('today-section'));bindReplyInboxControls(document.getElementById('today-section'));renderWaiting();
+        document.getElementById('today-count').textContent=(visible===total?String(total):visible+' of '+total)+' Actionable'+(total===1?'':'s');bindTodayLinks();bindColdOutreachControls(document.getElementById('today-section'));bindReplyInboxControls(document.getElementById('today-section'));bindTodaySnoozes(document.getElementById('today-section'));renderWaiting();
       }
       function empty(text){return '<div class="empty">'+esc(text)+'</div>';}
       function meetsMinimum(value,minimum){var scoreValue=num(value);return scoreValue===null?minimum===0:scoreValue>=minimum;}
