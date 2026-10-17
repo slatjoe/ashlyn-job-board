@@ -528,6 +528,18 @@
     .card-body>:empty,.contact-person-list:empty,.recent-roles:empty,.role-links:empty{display:none}
     .outreach-notice{margin:0 0 24px;padding:22px;border:1px dashed var(--line);background:var(--paper);color:var(--muted);text-align:center}
     .outreach-section{margin-bottom:28px}
+    .people-filters{display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:var(--paper);border:1px solid var(--line);padding:12px;margin-bottom:20px}
+    .people-filter-field{display:grid;gap:5px;min-width:min(220px,100%);flex:1 1 200px}
+    .people-filter-field .label{margin:0}
+    .people-filter-field select{width:100%;min-height:40px;border:1px solid var(--line-strong);border-radius:var(--radius-sm);background:var(--surface-soft);color:var(--ink);padding:8px 9px;font-size:15px}
+    .people-due-toggle{white-space:nowrap}
+    .people-due-toggle[aria-pressed="true"]{background:var(--blue-soft);border-color:var(--blue);color:var(--green-2)}
+    .people-group-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .person-tags{display:flex;flex-wrap:wrap;gap:6px}
+    .person-tag{display:inline-flex;align-items:center;padding:3px 8px;border:1px solid var(--line-strong);border-radius:999px;color:var(--secondary);font-size:12px;font-weight:600;line-height:1.25}
+    .person-tag.held-tag{background:var(--amber-soft);color:var(--amber);border-color:color-mix(in srgb,var(--amber) 55%,var(--line))}
+    .people-filter-empty{margin:0;color:var(--muted);font-size:13px}
+    @media(max-width:760px){.people-group-grid{grid-template-columns:1fr}.people-due-toggle{width:100%}}
     .contact-tree-grid{display:grid;gap:12px}
     .contact-company{background:var(--paper);border:1px solid var(--line);box-shadow:0 2px 8px rgba(21,32,26,.04);min-width:0}
     .contact-company-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:13px 15px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--paper) 76%,var(--green-soft))}
@@ -922,16 +934,21 @@
         <summary class="queue-head"><div><h2 id="outreach-up-next-heading">Actionable — today (<span class="section-heading-count" id="outreach-up-next-count">0 actions · ~0 min</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">Due-gated: only work whose due date is today or earlier counts. Identified contacts that are due count as actionable; identified contacts not yet due are backlog. Sends run daily until LinkedIn’s own warning, then stop for the day. ABB contacts are held while interviewing and never count here.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
         <ol class="up-next-list section-body" id="outreach-up-next-list"></ol>
       </details>
-      <section class="metrics outreach-metrics" aria-label="Outreach section counts">
-        <button class="metric" type="button" data-target="cold-outreach-section" aria-label="Jump to cold outreach"><div class="metric-value" id="cold-outreach-count">—</div><span class="metric-label">Cold outreach</span><span class="metric-detail" id="cold-outreach-weekly">— requests this week</span><span class="metric-detail" id="inmail-credits">6 of 6 InMail credits remaining</span></button>
-        <button class="metric" type="button" data-target="people-pipeline-section" aria-label="Jump to people pipeline"><div class="metric-value" id="outreach-people-count">—</div><span class="metric-label">People pipeline</span></button>
-        <button class="metric" type="button" data-target="outreach-uncc-section" aria-label="Jump to UNCC alumni leads"><div class="metric-value" id="outreach-alumni-count">—</div><span class="metric-label">UNCC alumni leads</span></button>
+      <section class="metrics outreach-metrics" aria-label="Outreach group counts">
+        <button class="metric" type="button" data-target="potential-connections-section" aria-label="Jump to potential connections"><div class="metric-value" id="potential-connections-metric">—</div><span class="metric-label">Potential connections</span><span class="metric-detail" id="cold-outreach-weekly">— requests this week</span><span class="metric-detail" id="inmail-credits">6 of 6 InMail credits remaining</span></button>
+        <button class="metric" type="button" data-target="open-requests-section" aria-label="Jump to open connection requests"><div class="metric-value" id="open-requests-metric">—</div><span class="metric-label">Open connection requests</span></button>
+        <button class="metric" type="button" data-target="accepted-connections-section" aria-label="Jump to accepted connections"><div class="metric-value" id="accepted-connections-metric">—</div><span class="metric-label">Accepted connections</span></button>
         <button class="metric" type="button" data-target="company-watch-section" aria-label="Jump to company watch"><div class="metric-value" id="outreach-company-count">—</div><span class="metric-label">Company watch</span></button>
+      </section>
+      <section class="people-filters" aria-label="Filter people">
+        <label class="people-filter-field"><span class="label">Company</span><select id="people-company-filter"><option value="">All companies</option></select></label>
+        <label class="people-filter-field"><span class="label">Tag</span><select id="people-tag-filter"><option value="">All tags</option></select></label>
+        <button class="action people-due-toggle" id="people-due-toggle" type="button" aria-pressed="false">Due now</button>
       </section>
       <div class="outreach-notice" id="outreach-notice">Loading outreach…</div>
       <div id="outreach-content" hidden>
-        <details class="outreach-section jump-target collapsible-section" id="cold-outreach-section" aria-labelledby="cold-outreach-heading" open>
-          <summary class="queue-head"><div><h2 id="cold-outreach-heading">Cold outreach (<span class="section-heading-count" id="cold-outreach-heading-count">0 contacts</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">Ashlyn sends each note herself from LinkedIn. The board tracks the timing and wording.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
+        <details class="outreach-section jump-target collapsible-section" id="potential-connections-section" aria-labelledby="potential-connections-heading" open>
+          <summary class="queue-head"><div><h2 id="potential-connections-heading">Potential connections (<span class="section-heading-count" id="potential-connections-count">0 people</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">Not yet invited. The next action is to send the connection request — Ashlyn sends each note herself from LinkedIn.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
           <div class="section-body">
             <form class="cold-outreach-form" id="cold-outreach-add-form">
               <label class="sr-only" for="cold-contact-name">Name</label><input class="field" id="cold-contact-name" name="name" type="text" placeholder="Name" autocomplete="name" required>
@@ -942,16 +959,23 @@
               <label class="sr-only" for="cold-contact-hook">Hook notes</label><textarea class="field wide" id="cold-contact-hook" name="hook" placeholder="One specific hook: their area, team, or product"></textarea>
               <button type="submit" class="action primary">Add contact</button><p class="cold-feedback wide" role="status" aria-live="polite"></p>
             </form>
-            <div class="grid cold-outreach-grid" id="cold-outreach-grid"><p class="uncc-notice">Loading cold outreach…</p></div>
+            <div class="grid people-group-grid" id="potential-connections-grid"><p class="uncc-notice">Loading people…</p></div>
+            <p class="people-filter-empty" id="potential-filter-empty" hidden>No potential connections match the current filters.</p>
           </div>
         </details>
-        <details class="outreach-section jump-target collapsible-section" id="people-pipeline-section" aria-labelledby="people-pipeline-heading">
-          <summary class="queue-head"><div><h2 id="people-pipeline-heading">People pipeline (<span class="section-heading-count" id="people-pipeline-count">0 people</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">Start with the person, connect them to a company, then move toward a live role.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
-          <div class="grid people-grid section-body" id="people-pipeline-grid"></div>
+        <details class="outreach-section jump-target collapsible-section" id="open-requests-section" aria-labelledby="open-requests-heading" open>
+          <summary class="queue-head"><div><h2 id="open-requests-heading">Open connection requests (<span class="section-heading-count" id="open-requests-count">0 people</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">Invite sent, not yet answered. Pending under 14 days; Bullpen at 14 days or more.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
+          <div class="section-body">
+            <div class="grid people-group-grid" id="open-requests-grid"><p class="uncc-notice">Loading people…</p></div>
+            <p class="people-filter-empty" id="open-filter-empty" hidden>No open requests match the current filters.</p>
+          </div>
         </details>
-        <details class="outreach-section uncc-shell jump-target collapsible-section" id="outreach-uncc-section" aria-labelledby="outreach-uncc-heading">
-          <summary class="queue-head"><div><h2 id="outreach-uncc-heading">UNCC alumni leads (<span class="section-heading-count" id="outreach-uncc-count">0</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">UNC Charlotte EE/CE grads working around the Triangle — review each lead and tell us how the discovery did.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
-          <div class="grid uncc-grid section-body" id="outreach-uncc-grid" aria-live="polite"><p class="uncc-notice">Loading alumni leads…</p></div>
+        <details class="outreach-section jump-target collapsible-section" id="accepted-connections-section" aria-labelledby="accepted-connections-heading" open>
+          <summary class="queue-head"><div><h2 id="accepted-connections-heading">Accepted connections (<span class="section-heading-count" id="accepted-connections-count">0 people</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">The connection exists. Each card says what is next: the ask owed, a follow-up or close due, in conversation, or parked.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
+          <div class="section-body">
+            <div class="grid people-group-grid" id="accepted-connections-grid"><p class="uncc-notice">Loading people…</p></div>
+            <p class="people-filter-empty" id="accepted-filter-empty" hidden>No accepted connections match the current filters.</p>
+          </div>
         </details>
         <details class="outreach-section jump-target collapsible-section" id="company-watch-section" aria-labelledby="company-watch-heading">
           <summary class="queue-head"><div><h2 id="company-watch-heading">Company watch (<span class="section-heading-count" id="company-watch-count">0 companies</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">Urgent follow-ups, active applications, and new roles surface first.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
@@ -1001,7 +1025,7 @@
         {name:'Caterpillar',email:'ashlyn2026@theslatterys.com',url:'https://cat.wd5.myworkdayjobs.com/CaterpillarCareers/login',match:/\bcaterpillar\b/i}
       ];
       var REASONS=['','Not EE enough','Too senior','Location','Travel/safety','Enrollment required','Software-heavy','Pay','Company not a good fit','Other'];
-      var data={jobs:[],connections:[],connectionsLoaded:false,loaded:false,count:0,generated:''}, uncc={prospects:[],loaded:false}, outreach={threads:[],entries:[],companies:[],loaded:false,available:null}, coldOutreach={contacts:[],weeklyRequests:0,loaded:false,available:null}, projects={list:[],loaded:false,available:null}, funnel={data:null,loaded:false,available:null}, minScores={fit:0,stretch:0,dna:0}, query='', outreachQuery='', decisionWindow='7', feedScript=null, feedTimer=null, feedCallback='', feedRequest=0, jsonpQueue=Promise.resolve(), supplementalRefresh=0, supplementalReady=false, tipsRequest=0, velocityRequest=0, velocityPayload=null, velocityStatus='idle', unccRequest=0, outreachRequest=0, coldOutreachRequest=0, projectsRequest=0, projectsLoading=false, funnelRequest=0, funnelLoading=false, filterTimer=0, focusSize=null, focusOverrides={}, pursueSearchState=null, outreachSearchState=null, attachmentNudges={}, attachedOverrides={}, autoFollowupStarting={}, connectionsLoading=false, outreachLoading=false, outreachLoadPromise=null;
+      var data={jobs:[],connections:[],connectionsLoaded:false,loaded:false,count:0,generated:''}, uncc={prospects:[],loaded:false}, outreach={threads:[],entries:[],companies:[],loaded:false,available:null}, coldOutreach={contacts:[],weeklyRequests:0,loaded:false,available:null}, projects={list:[],loaded:false,available:null}, funnel={data:null,loaded:false,available:null}, minScores={fit:0,stretch:0,dna:0}, query='', outreachQuery='', decisionWindow='7', feedScript=null, feedTimer=null, feedCallback='', feedRequest=0, jsonpQueue=Promise.resolve(), supplementalRefresh=0, supplementalReady=false, tipsRequest=0, velocityRequest=0, velocityPayload=null, velocityStatus='idle', unccRequest=0, outreachRequest=0, coldOutreachRequest=0, projectsRequest=0, projectsLoading=false, funnelRequest=0, funnelLoading=false, filterTimer=0, focusSize=null, focusOverrides={}, pursueSearchState=null, outreachSearchState=null, attachmentNudges={}, attachedOverrides={}, autoFollowupStarting={}, connectionsLoading=false, outreachLoading=false, outreachLoadPromise=null, peopleCompanyFilter='', peopleTagFilter='', peopleDueNow=false, peopleFiltersBound=false;
 
       function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
       function coachDisplayText(value){
@@ -1559,49 +1583,56 @@
         if(target){var section=target.closest('details.collapsible-section');if(section)section.open=true;var deadParent=target.closest('.cold-dead');if(deadParent)deadParent.open=true;target.classList.add('search-hit');requestAnimationFrame(function(){target.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});search.focus({preventScroll:true});});}else search.focus();
       }
       function applyOutreachSearch(){
-        var cards=document.querySelectorAll('#cold-outreach-grid .card, #people-pipeline-grid > .card, #company-watch-grid > .card, #outreach-uncc-grid > .card'),sections=document.querySelectorAll('#outreach-content > .outreach-section'),shown=0,status=document.getElementById('outreach-search-status'),clear=document.getElementById('outreach-search-clear'),content=document.getElementById('outreach-content'),view=document.getElementById('outreach-view'),searchActive=!!outreachQuery,exactCompanyMode=false;
+        var watchCards=document.querySelectorAll('#company-watch-grid > .card'),peopleCards=document.querySelectorAll('.person-group-card'),sections=document.querySelectorAll('#outreach-content > .outreach-section'),status=document.getElementById('outreach-search-status'),clear=document.getElementById('outreach-search-clear'),content=document.getElementById('outreach-content'),view=document.getElementById('outreach-view'),searchActive=!!outreachQuery,exactCompanyMode=false;
         document.querySelectorAll('.search-hit').forEach(function(el){el.classList.remove('search-hit');});
-        if(searchActive)cards.forEach(function(card){if(companyMatchesFilter(card.dataset.company,outreachQuery))exactCompanyMode=true;});
-        cards.forEach(function(card){var searchable=String(card.dataset.search||card.textContent||'').toLowerCase(),match=!searchActive||(exactCompanyMode?companyMatchesFilter(card.dataset.company,outreachQuery):headerMatch(searchable,outreachQuery));card.hidden=!match;if(match)shown++;});
+        if(searchActive){peopleCards.forEach(function(card){if(companyMatchesFilter(card.dataset.company,outreachQuery))exactCompanyMode=true;});watchCards.forEach(function(card){if(companyMatchesFilter(card.dataset.company,outreachQuery))exactCompanyMode=true;});}
+        applyPeopleFilters(exactCompanyMode);
+        var shown=0,total=0;
+        watchCards.forEach(function(card){var searchable=String(card.dataset.search||card.textContent||'').toLowerCase(),match=!searchActive||(exactCompanyMode?companyMatchesFilter(card.dataset.company,outreachQuery):headerMatch(searchable,outreachQuery));card.hidden=!match;total++;if(match)shown++;});
+        peopleCards.forEach(function(card){total++;if(!card.hidden)shown++;});
         if(searchActive){
           var q=String(outreachQuery||'').toLowerCase();
-          cards.forEach(function(card){if(!card.hidden&&card.dataset.person&&personKey(card.dataset.person)===personKey(q))card.classList.add('search-hit');});
-          document.querySelectorAll('#company-contact-tree-grid > .contact-company:not([hidden])').forEach(function(companyTile){
-            var companyMatch=headerMatch(String(companyTile.dataset.company||''),q),rows=companyTile.querySelectorAll('.contact-person'),visibleRows=0;
-            rows.forEach(function(personCard){
-              var personText=String((personCard.dataset.person||'')+' '+(personCard.dataset.search||'')+' '+(personCard.textContent||'')).toLowerCase(),rowMatch=companyMatch||headerMatch(personText,q);
-              personCard.hidden=!rowMatch;
-              if(rowMatch){visibleRows++;if(headerMatch(personText,q))personCard.classList.add('search-hit');}
-            });
-            companyTile.querySelectorAll('.contact-state-break').forEach(function(divider){
-              var sibling=divider.nextElementSibling,groupVisible=false;
-              while(sibling&&!sibling.classList.contains('contact-state-break')){if(sibling.classList.contains('contact-person')&&!sibling.hidden){groupVisible=true;break;}sibling=sibling.nextElementSibling;}
-              divider.hidden=!groupVisible;
-            });
-            var tileCount=companyTile.querySelector('.contact-company-count');
-            if(tileCount)tileCount.textContent=visibleRows<rows.length?visibleRows+' of '+rows.length+' contacts':rows.length+' contact'+(rows.length===1?'':'s');
-          });
+          peopleCards.forEach(function(card){if(!card.hidden&&card.dataset.person&&personKey(card.dataset.person)===personKey(q))card.classList.add('search-hit');});
+          watchCards.forEach(function(card){if(!card.hidden&&card.dataset.person&&personKey(card.dataset.person)===personKey(q))card.classList.add('search-hit');});
           if(!outreachSearchState){outreachSearchState={};sections.forEach(function(section){outreachSearchState[section.id]=section.open;});}
           content.classList.add('search-active');view.classList.add('search-active');
-          sections.forEach(function(section){var hasMatch=!!section.querySelector('.card:not([hidden]), .contact-company:not([hidden])');section.hidden=!hasMatch;section.open=true;});
-          document.querySelectorAll('.cold-dead').forEach(function(dead){if(dead.querySelector('.card:not([hidden])'))dead.open=true;});
+          sections.forEach(function(section){var hasMatch=!!section.querySelector('.card:not([hidden])');section.hidden=!hasMatch;section.open=true;});
         }else{
-          document.querySelectorAll('#company-contact-tree-grid .contact-person, #company-contact-tree-grid .contact-state-break').forEach(function(el){el.hidden=false;});
-          document.querySelectorAll('#company-contact-tree-grid > .contact-company').forEach(function(companyTile){var tileRows=companyTile.querySelectorAll('.contact-person'),tileCount=companyTile.querySelector('.contact-company-count');if(tileCount)tileCount.textContent=tileRows.length+' contact'+(tileRows.length===1?'':'s');});
           content.classList.remove('search-active');view.classList.remove('search-active');
-          sections.forEach(function(section){section.hidden=outreach.available===false&&section.id!=='cold-outreach-section';if(outreachSearchState&&Object.prototype.hasOwnProperty.call(outreachSearchState,section.id))section.open=outreachSearchState[section.id];});
+          sections.forEach(function(section){section.hidden=section.id==='company-watch-section'&&outreach.available===false;if(outreachSearchState&&Object.prototype.hasOwnProperty.call(outreachSearchState,section.id))section.open=outreachSearchState[section.id];});
           outreachSearchState=null;
         }
         if(clear)clear.hidden=!searchActive;
-        if(status)status.textContent=searchActive?(shown?shown+' of '+cards.length+' entries shown':'No matching entries'):'';
+        if(status)status.textContent=searchActive?(shown?shown+' of '+total+' entries shown':'No matching entries'):'';
+      }
+      function peopleFiltersActive(){return !!(peopleCompanyFilter||peopleTagFilter||peopleDueNow||outreachQuery);}
+      function applyPeopleFilters(exactCompanyMode){
+        var groups=[['potential-connections-grid','potential-connections-count','potential-filter-empty'],['open-requests-grid','open-requests-count','open-filter-empty'],['accepted-connections-grid','accepted-connections-count','accepted-filter-empty']];
+        document.querySelectorAll('.person-group-card').forEach(function(card){
+          var match=true;
+          if(outreachQuery)match=exactCompanyMode?companyMatchesFilter(card.dataset.company,outreachQuery):headerMatch(String(card.dataset.search||''),outreachQuery);
+          if(match&&peopleCompanyFilter)match=companyMatchesFilter(card.dataset.company,peopleCompanyFilter);
+          if(match&&peopleTagFilter)match=(card.dataset.tags||'').split('|').indexOf(peopleTagFilter)>=0;
+          if(match&&peopleDueNow)match=card.dataset.due==='1';
+          card.hidden=!match;
+        });
+        var filtering=peopleFiltersActive();
+        groups.forEach(function(group){
+          var grid=document.getElementById(group[0]),count=document.getElementById(group[1]),emptyNote=document.getElementById(group[2]);if(!grid||!count)return;
+          var cards=grid.querySelectorAll('.person-group-card'),visible=0;cards.forEach(function(card){if(!card.hidden)visible++;});
+          count.textContent=(filtering&&visible!==cards.length)?visible+' of '+cards.length+' people':cards.length+' people';
+          if(emptyNote)emptyNote.hidden=!(filtering&&cards.length>0&&visible===0);
+        });
       }
       function renderUnccLeads(savedMessage,savedName){
-        var order={Pending:0,Kept:1,Rejected:2},prospects=uncc.prospects.slice(),countText;
-        prospects.sort(function(a,b){return order[a.review]-order[b.review];});countText=String(prospects.length);
-        unccSurfaces().forEach(function(surface){if(!surface.grid||!surface.count)return;surface.count.textContent=countText;surface.grid.innerHTML=prospects.length?prospects.map(unccCard).join(''):'<p class="uncc-notice">No UNCC alumni leads are available to review.</p>';bindUnccControls(surface.grid);});
-        if(savedMessage)findUnccCards(savedName).forEach(function(card){var line=card.querySelector('.uncc-card-status');if(line){line.className='uncc-card-status success';line.textContent=savedMessage;}});applyOutreachSearch();
+        // UNCC prospects no longer render as their own section: they are
+        // merged into the one people list (Potential connections, with a
+        // UNCC alumni tag) by renderPeopleGroups.
+        renderPeopleGroups();
+        if(savedMessage)findUnccCards(savedName).forEach(function(card){var line=card.querySelector('.uncc-card-status');if(line){line.className='uncc-card-status success';line.textContent=savedMessage;}});
+        applyOutreachSearch();
       }
-      function showUnccUnavailable(){uncc={prospects:[],loaded:false};unccSurfaces().forEach(function(surface){if(!surface.grid||!surface.count)return;surface.count.textContent='';surface.grid.innerHTML='<p class="uncc-notice">Alumni leads could not connect. Use Refresh board to try again.</p>';});}
+      function showUnccUnavailable(){uncc={prospects:[],loaded:false};renderPeopleGroups();}
       function loadUnccLeads(savedMessage,savedName){
         var token=++unccRequest;
         if(!uncc.loaded)unccSurfaces().forEach(function(surface){if(surface.grid)surface.grid.innerHTML='<p class="uncc-notice">Loading alumni leads…</p>';});
@@ -1904,7 +1935,7 @@
             if(next!==null&&next<=calendarDay(today)){
               var late=next<calendarDay(today),nudgeId='person:'+personKey(person.name)+'|'+companyKey(person.company);
               if(isTodaySnoozed(nudgeId))return;
-              peopleNudgeItems.push(snoozableItem('<a class="nudge today-link '+(late?'overdue':'')+'" href="#people-pipeline-section" data-outreach-target="people-pipeline-section" data-person-name="'+esc(person.name)+'"><strong>'+esc(person.name)+' — '+esc(person.company)+(late?': nudge overdue.':': nudge due today.')+'</strong> Open People pipeline and log the touch.</a>',nudgeId));
+              peopleNudgeItems.push(snoozableItem('<a class="nudge today-link '+(late?'overdue':'')+'" href="#accepted-connections-section" data-outreach-target="accepted-connections-section" data-person-name="'+esc(person.name)+'"><strong>'+esc(person.name)+' — '+esc(person.company)+(late?': nudge overdue.':': nudge due today.')+'</strong> Open Accepted connections and log the touch.</a>',nudgeId));
             }
           });
         }
@@ -2915,9 +2946,217 @@
         coldOutreach={contacts:contacts,weeklyRequests:weekly,loaded:true,available:true,fallback:true};renderColdOutreach();return true;
       }
       function showColdOutreachUnavailable(){
-        if(useColdOutreachFallback())return;coldOutreach={contacts:[],weeklyRequests:0,loaded:false,available:false};var grid=document.getElementById('cold-outreach-grid'),form=document.getElementById('cold-outreach-add-form'),terminal=document.getElementById('cold-outreach-terminal');
-        if(form)form.hidden=false;if(grid)grid.innerHTML='<p class="uncc-notice">Could not load outreach contacts. Use Refresh board to try again.</p>';if(terminal)terminal.hidden=true;
-        document.getElementById('cold-outreach-count').textContent='—';var coldHeadingUnavailable=document.getElementById('cold-outreach-heading-count');if(coldHeadingUnavailable)coldHeadingUnavailable.textContent='— contacts';document.getElementById('cold-outreach-weekly').textContent='connection unavailable';document.getElementById('inmail-credits').textContent='InMail credits unavailable';renderDoToday();renderCompanyContactTree();applyOutreachSearch();
+        if(useColdOutreachFallback())return;coldOutreach={contacts:[],weeklyRequests:0,loaded:false,available:false};var grid=document.getElementById('potential-connections-grid'),form=document.getElementById('cold-outreach-add-form');
+        if(form)form.hidden=false;if(grid)grid.innerHTML='<p class="uncc-notice">Could not load outreach contacts. Use Refresh board to try again.</p>';
+        var weekly=document.getElementById('cold-outreach-weekly'),credits=document.getElementById('inmail-credits');if(weekly)weekly.textContent='connection unavailable';if(credits)credits.textContent='InMail credits unavailable';renderPeopleGroups();renderDoToday();renderCompanyContactTree();applyOutreachSearch();
+      }
+      // ---- One merged people list (agreed model, 2026-11-16) ----
+      // Every person appears exactly once, in exactly one of three groups.
+      // Sources: Contacts (outreachData), Connections sheet, UNCC_Prospects.
+      // A Contacts record governs group and state when one exists.
+      function classifyMergedPerson(rec){
+        var today=browserToday(),todayDay=calendarDay(today);
+        if(rec.contact){
+          var c=rec.contact,state=String(c.state||'').trim().toUpperCase().replace(/[\s-]+/g,'_'),dueRaw=String(c.nextDue||'');
+          if(state==='IDENTIFIED')return {group:'potential',stateLabel:'Not yet invited',nextAction:c.nextAction||'Send connection request',nextDue:dueRaw};
+          if(state==='CLOSED'){
+            var dueDay=calendarDay(dueRaw);
+            if(dueDay!==null&&dueDay>todayDay)return {group:'potential',stateLabel:'In withdraw lockout until '+formatDate(dueRaw),nextAction:'Re-invite after '+formatDate(dueRaw),nextDue:dueRaw,lockout:true};
+            if(dueDay!==null&&dueDay<=todayDay)return {group:'potential',stateLabel:'Ready to re-invite',nextAction:'Send connection request',nextDue:dueRaw};
+            return {excluded:true};
+          }
+          if(state==='REQUEST_SENT'||state==='INVITED'||state==='STALE'){
+            var days=contactAgeDays(c),bullpen=state==='STALE'||(days!==null&&days>=14);
+            return {group:'open',stateLabel:bullpen?'Bullpen':'Pending',nextAction:c.nextAction||'Awaiting acceptance',nextDue:dueRaw,daysWaiting:days};
+          }
+          if(['CONNECTED','ACCEPTED','REPLIED','IN_CONVERSATION','BUMP_DUE','BUMP_SENT','INTERVIEW','INMAIL_SENT','DM2_SENT','CLOSE_DUE','MEETING_SCHEDULED','MEETING'].indexOf(state)>=0){
+            var label,nextDue=dueRaw;
+            if(state==='BUMP_DUE'){nextDue=dueRaw||effectiveColdDue(c);label='Follow-up due '+formatDate(nextDue);}
+            else if(state==='CLOSE_DUE'){nextDue=dueRaw||effectiveColdDue(c);label='Close due '+formatDate(nextDue);}
+            else if(state==='REPLIED'||state==='IN_CONVERSATION'||state==='INTERVIEW'||state==='MEETING_SCHEDULED'||state==='MEETING')label='In conversation';
+            else if(state==='ACCEPTED'||state==='CONNECTED')label='DM1 ask owed';
+            else label='Parked';
+            return {group:'accepted',stateLabel:label,nextAction:c.nextAction||coldNextAction(c),nextDue:nextDue};
+          }
+          return {excluded:true};
+        }
+        if(rec.connection&&!isDismissedConnection(rec.connection)){
+          var raw=rec.connection,statusKey=connectionStatusKey(raw),cNext=String(contactField(raw,'nextAction','next_action','Next Action')||''),cDue=String(contactField(raw,'nextDue','next_due','Next Due','dueDate','due_date','Due Date')||'');
+          if(isSuggestedConnection(raw))return {group:'potential',stateLabel:'Not yet invited',nextAction:cNext||'Send connection request',nextDue:cDue};
+          if(statusKey==='REQUEST_SENT'||statusKey==='REQUESTED'||statusKey==='INVITED'||statusKey==='STALE'){
+            var touch=connectionLastTouchDate(raw)||dateOnly(connectionLoggedDate(raw)),cdays=touch?Math.max(0,daysBetween(today,touch)):null;
+            return {group:'open',stateLabel:(statusKey==='STALE'||(cdays!==null&&cdays>=14))?'Bullpen':'Pending',nextAction:cNext||'Awaiting acceptance',nextDue:cDue,daysWaiting:cdays};
+          }
+          if(isConnectedStatus(raw)||statusKey==='CONNECTED'||statusKey==='ACCEPTED'){
+            var label2;
+            if(statusKey==='BUMP_DUE')label2='Follow-up due '+(cDue?formatDate(cDue):'');
+            else if(statusKey==='CLOSE_DUE')label2='Close due '+(cDue?formatDate(cDue):'');
+            else if(['REPLIED','IN_CONVERSATION','CONVERSATION','MEETING','MEETING_SCHEDULED'].indexOf(statusKey)>=0)label2='In conversation';
+            else if(!connectionMessaged(raw))label2='DM1 ask owed';
+            else label2='Parked';
+            return {group:'accepted',stateLabel:label2,nextAction:cNext||'No action scheduled',nextDue:cDue};
+          }
+          return {group:'potential',stateLabel:'Not yet invited',nextAction:cNext||'Send connection request',nextDue:cDue};
+        }
+        if(rec.uncc){
+          if(rec.uncc.review==='Rejected')return {excluded:true};
+          return {group:'potential',stateLabel:'Not yet invited',nextAction:'Send connection request',nextDue:''};
+        }
+        return {excluded:true};
+      }
+      function mergedDueNow(rec,cls){
+        if(isHeldCompany(rec.company))return false;
+        if(cls.lockout)return false;
+        var todayDay=calendarDay(browserToday());
+        if(cls.group==='potential'){var d=calendarDay(cls.nextDue);return d===null||d<=todayDay;}
+        if(cls.group==='open')return false;
+        if(cls.group==='accepted'){
+          if(cls.stateLabel==='DM1 ask owed')return true;
+          if(cls.stateLabel.indexOf('Follow-up due')===0||cls.stateLabel.indexOf('Close due')===0){var dd=calendarDay(cls.nextDue);return dd===null||dd<=todayDay;}
+          return false;
+        }
+        return false;
+      }
+      function mergedPersonTags(rec){
+        var tags=[],seen={};
+        function add(key,label){key=String(key||'').toLowerCase();if(!key||seen[key])return;seen[key]=true;tags.push({key:key,label:label});}
+        if(rec.company)add('company:'+companyKey(rec.company),rec.company);
+        var seg=rec.segment||(rec.contact?rec.contact.segment:'')||'';
+        if(seg)add(coldSegmentLabel(seg).toLowerCase(),coldSegmentLabel(seg));
+        if(rec.uncc||seg==='uncc')add('uncc alumni','UNCC alumni');
+        if(seg==='recruiter')add('recruiter','Recruiter');
+        if(rec.contact&&rec.contact.path)add(rec.contact.path==='inmail'?'inmail path':'connection request path',rec.contact.path==='inmail'?'InMail path':'Connection request path');
+        if(isHeldCompany(rec.company))add('held — live process','Held — live process');
+        return tags;
+      }
+      function buildMergedPeople(){
+        var records=[];
+        function findRecord(name,company){
+          var key=personKey(name);if(!key)return null;
+          for(var i=0;i<records.length;i++){var rec=records[i];if(personKey(rec.name)!==key)continue;if(!company||!rec.company)return rec;if(companyKey(rec.company)===companyKey(company)||companyMatchesFilter(rec.company,company)||companyMatchesFilter(company,rec.company))return rec;}
+          return null;
+        }
+        function ensure(name,company){
+          name=String(name||'').trim();if(!name)return null;
+          var rec=findRecord(name,company);
+          if(!rec){rec={name:name,company:String(company||'').trim(),title:'',linkedin:'',contact:null,connection:null,uncc:null,segment:''};records.push(rec);}
+          else if(!rec.company&&company)rec.company=String(company).trim();
+          return rec;
+        }
+        if(coldOutreach.available)(coldOutreach.contacts||[]).forEach(function(contact){
+          if(!contact||!contact.name)return;var rec=ensure(contact.name,contact.company);if(!rec)return;
+          if(!rec.contact){rec.contact=contact;rec.company=contact.company||rec.company;rec.title=contact.title||rec.title;rec.linkedin=contact.url||rec.linkedin;rec.segment=contact.segment||rec.segment;}
+        });
+        if(data.connectionsLoaded)(data.connections||[]).forEach(function(raw){
+          var name=contactName(raw);if(!name)return;var rec=ensure(name,contactCompany(raw));if(!rec)return;
+          if(!rec.connection)rec.connection=raw;
+          if(!rec.title)rec.title=String(contactField(raw,'title','Title','jobTitle','job_title','position','headline')||'');
+          if(!rec.linkedin)rec.linkedin=contactLinkedInUrl(raw);
+          if(!rec.segment)rec.segment=coldSegmentFromLegacy(raw);
+        });
+        (uncc.prospects||[]).forEach(function(person){
+          if(!person||!person.name)return;var rec=ensure(person.name,person.company);if(!rec)return;
+          if(!rec.uncc)rec.uncc=person;
+          if(!rec.title)rec.title=person.title||'';
+          if(!rec.linkedin)rec.linkedin=person.profileUrl||'';
+          if(!rec.segment||rec.segment==='role')rec.segment='uncc';
+        });
+        var pipeline=outreach.available?outreachPeople():[],out=[];
+        records.forEach(function(rec,index){
+          rec._index=index;
+          rec.pipeline=pipeline.filter(function(person){return personKey(person.name)===personKey(rec.name)&&(companyMatchesFilter(rec.company,person.company)||companyMatchesFilter(person.company,rec.company));})[0]||null;
+          var cls=classifyMergedPerson(rec);if(!cls||cls.excluded)return;
+          rec._cls=cls;rec.tags=mergedPersonTags(rec);rec.dueNow=mergedDueNow(rec,cls);
+          out.push(rec);
+        });
+        return out;
+      }
+      function mergedTemplateBlock(contact,index){
+        var template=coldTemplate(contact),isResurrection=(contact.state==='REQUEST_SENT'||contact.state==='STALE')&&!!template&&isBullpenContact(contact)&&hasLiveApplication(contact.company),actionableNote=(contact.state==='IDENTIFIED'||contact.state==='ACCEPTED'||isResurrection),sentLabel=isResurrection?'December resurrection batch — planned re-invite note':actionableNote?'Planned message':'Sent note (for reference)',copyRow=actionableNote?'<div class="outreach-copy-row"><button type="button" class="action subtle cold-copy" data-message="'+esc(template)+'">Copy note</button><span class="outreach-copy-feedback" role="status" aria-live="polite"></span></div>':'';
+        if(contact.state==='BUMP_DUE'||contact.state==='CLOSE_DUE')return '<div><div class="label">Planned message</div><p class="copy">Draft fresh from the live thread when due.</p></div>';
+        if(template)return '<div><label class="label" for="merged-template-'+index+'">'+sentLabel+'</label><textarea class="cold-template" id="merged-template-'+index+'" readonly>'+esc(template)+'</textarea>'+copyRow+'</div>';
+        return '<div><div class="label">LinkedIn step</div><p class="cold-instruction">'+esc(coldInstruction(contact))+'</p></div>';
+      }
+      function mergedReplyFootnote(contact){
+        return (contact.state==='INMAIL_SENT'||contact.state==='DM2_SENT'||contact.state==='BUMP_DUE'||contact.state==='BUMP_SENT'||contact.state==='CLOSE_DUE')?'<p class="cold-footnote">'+esc(contact.state==='INMAIL_SENT'?'InMail path: no acceptance step. Mark replied only when they respond directly.':'Press the main button after you take the step on LinkedIn. ‘Mark replied’ is only for when they respond.')+'</p>':'';
+      }
+      function mergedPipelineHtml(rec){
+        var person=rec.pipeline,latest=person.latest,lastDate=latest&&val(latest,'date'),nextNudge=derivedNextNudge(person),days=lastDate?Math.max(0,daysBetween(browserToday(),lastDate)):'—',touchId='merged-touch-'+rec._index;
+        var roles=person.roles&&person.roles.length?'<ul class="role-links">'+person.roles.map(function(job){return '<li><a class="role-link outreach-job-link" href="#'+esc(jobAnchorId(job))+'" data-job-target="'+esc(jobAnchorId(job))+'">'+esc(job.title)+(job.reqId?' · '+esc(job.reqId):'')+'</a></li>';}).join('')+'</ul>':'<p class="copy muted">No live roles at this company.</p>';
+        return (person.warm?'<div><span class="warm-badge">Warm path</span></div>':'')+'<div class="person-facts"><div class="fact"><span>Days since last touch</span><strong>'+esc(days)+'</strong></div><div class="fact"><span>Next nudge</span><strong>'+esc(formatDate(nextNudge))+'</strong></div></div><div><div class="label">Live roles</div>'+roles+'</div><form class="touch-form"><label class="sr-only" for="'+touchId+'-channel">Channel</label><select class="field" id="'+touchId+'-channel" name="channel"><option>LinkedIn</option><option>Email</option><option>In-person</option><option>Other</option></select><div class="response-group" role="group" aria-label="Response received"><button type="button" class="response-option" data-response="Yes" aria-pressed="false">Response: Yes</button><button type="button" class="response-option" data-response="No" aria-pressed="true">No</button></div><label class="sr-only" for="'+touchId+'-summary">Touch summary</label><input class="field wide" id="'+touchId+'-summary" name="summary" type="text" placeholder="Short summary" required><label class="sr-only" for="'+touchId+'-nudge">Next nudge date</label><input class="field" id="'+touchId+'-nudge" name="nextNudge" type="date" value="'+defaultNudgeDate()+'"><button type="submit" class="action primary">Log a touch</button><p class="outreach-feedback wide" role="status" aria-live="polite"></p></form>';
+      }
+      function mergedUnccBlock(rec){
+        var person=rec.uncc;
+        function toggle(kind,value,selected){return '<button type="button" class="action uncc-toggle" data-kind="'+kind+'" data-value="'+value+'" aria-pressed="'+(selected===value?'true':'false')+'">'+value+'</button>';}
+        return fieldBlock('Degree evidence',person.degree||'Not listed',true)+fieldBlock('Notes',person.notes||'No notes saved.',true)+'<div><div class="label">Review</div><div class="actions"><button type="button" class="action uncc-review" data-verdict="Kept" aria-pressed="'+(person.review==='Kept'?'true':'false')+'">Keep</button><button type="button" class="action danger uncc-review" data-verdict="Rejected" aria-pressed="'+(person.review==='Rejected'?'true':'false')+'">Reject</button></div></div><div class="uncc-feedback"><div class="uncc-feedback-row"><span class="uncc-feedback-label">Contact:</span><div class="uncc-toggle-group" role="group" aria-label="Contact feedback for '+esc(person.name)+'">'+toggle('contact','Hit',person.contactFeedback)+toggle('contact','Miss',person.contactFeedback)+'</div></div><div class="uncc-feedback-row"><span class="uncc-feedback-label">Company:</span><div class="uncc-toggle-group" role="group" aria-label="Company feedback for '+esc(person.name)+'">'+toggle('company','Hit',person.companyFeedback)+toggle('company','Miss',person.companyFeedback)+'</div></div></div><p class="uncc-card-status" role="status" aria-live="polite"></p>';
+      }
+      function mergedPersonCard(rec){
+        var cls=rec._cls,contact=rec.contact,held=isHeldCompany(rec.company),index=rec._index,cardId=contact?('cold-card-'+contact.row):('person-card-'+index);
+        var classes='card person-group-card'+(contact?' cold-card':'')+(rec.uncc?' uncc-card':'');
+        var nameHtml=rec.linkedin?'<a href="'+esc(rec.linkedin)+'" target="_blank" rel="noopener noreferrer">'+esc(rec.name)+' ↗</a>':esc(rec.name);
+        var tagsHtml='<div class="person-tags">'+rec.tags.map(function(tag){return '<span class="person-tag'+(tag.key==='held — live process'?' held-tag':'')+'">'+esc(tag.label)+'</span>';}).join('')+'</div>';
+        var facts='<div class="cold-facts"><div class="fact"><span>Next action</span><strong>'+esc(cls.nextAction||'—')+'</strong></div><div class="fact"><span>Due</span><strong>'+esc(cls.nextDue?formatDate(cls.nextDue):'Not set')+'</strong></div>'+(cls.group==='open'?'<div class="fact"><span>Days waiting</span><strong>'+esc(cls.daysWaiting===null||cls.daysWaiting===undefined?'—':cls.daysWaiting)+'</strong></div>':'')+'</div>';
+        var body='';
+        if(rec.pipeline)body+=mergedPipelineHtml(rec);
+        if(contact){
+          if(cls.lockout)body+='<p class="cold-instruction">Invitation withdrawn. LinkedIn allows a re-invite after '+esc(formatDate(cls.nextDue))+'.</p>';
+          else if(held)body+='<p class="cold-instruction">Held — live process. Outreach is paused for this company while she is interviewing.</p>';
+          else body+=mergedTemplateBlock(contact,index)+'<div class="cold-actions">'+coldActionButtons(contact)+'</div>'+mergedReplyFootnote(contact)+'<p class="cold-feedback" role="status" aria-live="polite"></p>';
+        }else if(held){
+          body+='<p class="cold-instruction">Held — live process. Outreach is paused for this company while she is interviewing.</p>';
+        }else if(cls.group==='potential'){
+          var planned=coldTemplate({name:rec.name,company:rec.company,state:'IDENTIFIED'});
+          if(planned)body+='<div><label class="label" for="merged-template-'+index+'">Planned message</label><textarea class="cold-template" id="merged-template-'+index+'" readonly>'+esc(planned)+'</textarea><div class="outreach-copy-row"><button type="button" class="action subtle cold-copy" data-message="'+esc(planned)+'">Copy note</button><span class="outreach-copy-feedback" role="status" aria-live="polite"></span></div></div>';
+        }
+        if(rec.uncc&&!contact)body+=mergedUnccBlock(rec);
+        body+=logMessageControl({name:rec.name,company:rec.company,title:rec.title,linkedin:rec.linkedin});
+        return '<article id="'+esc(cardId)+'" class="'+classes+'" data-person="'+esc(rec.name)+'" data-company="'+esc(rec.company)+'" data-group="'+esc(cls.group)+'" data-tags="'+esc(rec.tags.map(function(t){return t.key;}).join('|'))+'" data-due="'+(rec.dueNow?'1':'0')+'"'+(contact?' data-row="'+esc(contact.row)+'"':'')+(rec.uncc?' data-uncc-name="'+esc(rec.uncc.name)+'"':'')+' data-search="'+esc((rec.name+' '+rec.company+' '+rec.title+' '+cls.stateLabel+' '+(cls.nextAction||'')+' '+rec.tags.map(function(t){return t.label;}).join(' ')).toLowerCase())+'"><div class="card-head"><div class="topline"><span class="company">Contact · '+esc(rec.company||'Company not listed')+'</span><span class="stage cold-state">'+esc(cls.stateLabel)+'</span></div><h3 class="cold-name">'+nameHtml+'</h3><p class="cold-title">'+esc(rec.title||'Title not listed')+'</p></div><div class="card-body">'+tagsHtml+facts+body+'</div></article>';
+      }
+      function populatePeopleFilterOptions(records){
+        var companySelect=document.getElementById('people-company-filter'),tagSelect=document.getElementById('people-tag-filter');if(!companySelect||!tagSelect)return;
+        var companies={},tagLabels={};
+        records.forEach(function(rec){
+          if(rec.company)companies[rec.company]=true;
+          rec.tags.forEach(function(tag){if(tag.key.indexOf('company:')!==0)tagLabels[tag.key]=tag.label;});
+        });
+        var companyNames=Object.keys(companies).sort(function(a,b){return a.localeCompare(b);}),tagKeys=Object.keys(tagLabels).sort(function(a,b){return tagLabels[a].localeCompare(tagLabels[b]);});
+        companySelect.innerHTML='<option value="">All companies</option>'+companyNames.map(function(name){return '<option value="'+esc(name)+'">'+esc(name)+'</option>';}).join('');
+        if(peopleCompanyFilter&&!companies[peopleCompanyFilter])peopleCompanyFilter='';
+        companySelect.value=peopleCompanyFilter;
+        tagSelect.innerHTML='<option value="">All tags</option>'+tagKeys.map(function(key){return '<option value="'+esc(key)+'">'+esc(tagLabels[key])+'</option>';}).join('');
+        if(peopleTagFilter&&!tagLabels[peopleTagFilter])peopleTagFilter='';
+        tagSelect.value=peopleTagFilter;
+      }
+      function bindPeopleFilterControls(){
+        if(peopleFiltersBound)return;peopleFiltersBound=true;
+        var companySelect=document.getElementById('people-company-filter'),tagSelect=document.getElementById('people-tag-filter'),dueToggle=document.getElementById('people-due-toggle');
+        if(companySelect)companySelect.addEventListener('change',function(){peopleCompanyFilter=companySelect.value;applyOutreachSearch();});
+        if(tagSelect)tagSelect.addEventListener('change',function(){peopleTagFilter=tagSelect.value;applyOutreachSearch();});
+        if(dueToggle)dueToggle.addEventListener('click',function(){peopleDueNow=!peopleDueNow;dueToggle.setAttribute('aria-pressed',peopleDueNow?'true':'false');applyOutreachSearch();});
+      }
+      function renderPeopleGroups(){
+        var content=document.getElementById('outreach-content');if(!content)return;
+        var records=buildMergedPeople(),groups={potential:[],open:[],accepted:[]};
+        records.forEach(function(rec){groups[rec._cls.group].push(rec);});
+        groups.potential.sort(function(a,b){var al=a._cls.lockout?1:0,bl=b._cls.lockout?1:0;if(al!==bl)return al-bl;var ad=a.dueNow?0:1,bd=b.dueNow?0:1;if(ad!==bd)return ad-bd;return String(a.company).localeCompare(String(b.company))||a.name.localeCompare(b.name);});
+        groups.open.sort(function(a,b){var ad=a._cls.daysWaiting===null||a._cls.daysWaiting===undefined?-1:a._cls.daysWaiting,bd=b._cls.daysWaiting===null||b._cls.daysWaiting===undefined?-1:b._cls.daysWaiting;return bd-ad||a.name.localeCompare(b.name);});
+        var stateRank={'DM1 ask owed':0,'Parked':4,'In conversation':3};
+        groups.accepted.sort(function(a,b){
+          function rank(rec){if(rec._cls.stateLabel.indexOf('Follow-up due')===0)return 1;if(rec._cls.stateLabel.indexOf('Close due')===0)return 2;return Object.prototype.hasOwnProperty.call(stateRank,rec._cls.stateLabel)?stateRank[rec._cls.stateLabel]:4;}
+          var ar=rank(a),br=rank(b);if(ar!==br)return ar-br;
+          var ad=calendarDay(a._cls.nextDue),bd=calendarDay(b._cls.nextDue);if(ad!==null||bd!==null){if(ad===null)return 1;if(bd===null)return -1;if(ad!==bd)return ad-bd;}
+          return a.name.localeCompare(b.name);
+        });
+        populatePeopleFilterOptions(records);bindPeopleFilterControls();
+        var grids={potential:document.getElementById('potential-connections-grid'),open:document.getElementById('open-requests-grid'),accepted:document.getElementById('accepted-connections-grid')};
+        var emptyText={potential:'No one is waiting to be invited right now.',open:'No connection requests are waiting on a reply.',accepted:'No accepted connections yet.'};
+        ['potential','open','accepted'].forEach(function(key){if(grids[key])grids[key].innerHTML=groups[key].length?groups[key].map(mergedPersonCard).join(''):empty(emptyText[key]);});
+        var potentialMetric=document.getElementById('potential-connections-metric'),openMetric=document.getElementById('open-requests-metric'),acceptedMetric=document.getElementById('accepted-connections-metric');
+        if(potentialMetric)potentialMetric.textContent=String(groups.potential.length);
+        if(openMetric)openMetric.textContent=String(groups.open.length);
+        if(acceptedMetric)acceptedMetric.textContent=String(groups.accepted.length);
+        bindColdOutreachControls(content);bindUnccControls(content);
+        applyPeopleFilters(false);
       }
       function coldStateKey(contact){return String(contact&&contact.state||'').trim().toUpperCase().replace(/[\s\-\/]+/g,'_');}
       function coldGroupKey(contact){
@@ -2933,26 +3172,14 @@
       }
       var COLD_GROUPS=[['ready','Send invite — Ready'],['later','Send invite — Later'],['ask','Send the ask'],['follow','Follow up'],['close','Close out'],['waiting','Waiting on them'],['conversation','In conversation'],['dead','Dead weight']];
       function renderColdOutreach(){
-        if(!coldOutreach.available)return;promoteSuggestedProspects();var all=coldOutreach.contacts.slice(),grid=document.getElementById('cold-outreach-grid'),form=document.getElementById('cold-outreach-add-form');
-        if(form)form.hidden=false;document.getElementById('cold-outreach-count').textContent=String(coldActiveContacts().length);document.getElementById('cold-outreach-weekly').textContent=coldOutreach.weeklyRequests+' request'+(coldOutreach.weeklyRequests===1?'':'s')+' this week';document.getElementById('inmail-credits').textContent=inmailCreditsRemaining()+' of 6 InMail credits remaining';
-        var headingCount=document.getElementById('cold-outreach-heading-count');if(headingCount)headingCount.textContent=all.length+' contact'+(all.length===1?'':'s');
-        var pipelinePeople=outreach.available?outreachPeople():[];
-        function cardFor(contact){
-          var index=all.indexOf(contact),match=pipelinePeople.filter(function(person){return personKey(person.name)===personKey(contact.name)&&(companyMatchesFilter(contact.company,person.company)||companyMatchesFilter(person.company,contact.company));})[0]||null;return coldContactCard(contact,index,false,match);
-        }
-        if(!all.length){grid.innerHTML=empty('No cold-outreach contacts. Add one above when you have a real person to approach.');}
-        else{
-          var byGroup={};COLD_GROUPS.forEach(function(group){byGroup[group[0]]=[];});all.forEach(function(contact){byGroup[coldGroupKey(contact)].push(contact);});
-          grid.innerHTML='<div class="cold-groups">'+COLD_GROUPS.map(function(group){
-            var key=group[0],title=group[1],members=byGroup[key],countLabel=members.length+' contact'+(members.length===1?'':'s'),cards=members.length?members.map(cardFor).join(''):'<p class="cold-group-empty">None right now.</p>';
-            if(key==='dead')return '<details class="cold-group cold-dead"><summary class="cold-group-head"><span>'+esc(title)+' (<span class="count">'+esc(countLabel)+'</span>)</span><span class="cold-dead-toggle">Show/Hide</span></summary><div class="grid cold-outreach-grid cold-group-grid">'+cards+'</div></details>';
-            return '<section class="cold-group"><h3 class="cold-group-head"><span>'+esc(title)+'</span><span class="count">'+esc(countLabel)+'</span></h3><div class="grid cold-outreach-grid cold-group-grid">'+cards+'</div></section>';
-          }).join('')+'</div>';
-        }
-        bindColdOutreachControls(document.getElementById('cold-outreach-section'));renderDoToday();renderUpNext();renderWaiting();if(outreach.available)renderOutreach();else renderCompanyContactTree();applyOutreachSearch();
+        if(!coldOutreach.available)return;promoteSuggestedProspects();var form=document.getElementById('cold-outreach-add-form');
+        if(form)form.hidden=false;var weekly=document.getElementById('cold-outreach-weekly'),credits=document.getElementById('inmail-credits');
+        if(weekly)weekly.textContent=coldOutreach.weeklyRequests+' request'+(coldOutreach.weeklyRequests===1?'':'s')+' this week';
+        if(credits)credits.textContent=inmailCreditsRemaining()+' of 6 InMail credits remaining';
+        renderPeopleGroups();renderDoToday();renderUpNext();renderWaiting();if(outreach.available)renderOutreach();else renderCompanyContactTree();applyOutreachSearch();
       }
       function loadColdOutreachData(){
-        var token=++coldOutreachRequest,grid=document.getElementById('cold-outreach-grid');if(coldOutreach.available===null&&grid)grid.innerHTML='<p class="uncc-notice">Loading cold outreach…</p>';
+        var token=++coldOutreachRequest,grid=document.getElementById('potential-connections-grid');if(coldOutreach.available===null&&grid)grid.innerHTML='<p class="uncc-notice">Loading people…</p>';
         return outreachGet('outreachData').then(function(payload){if(token!==coldOutreachRequest)return false;if(!Array.isArray(payload.contacts))throw new Error('missing contacts');coldOutreach={contacts:payload.contacts.map(normalizeColdContact),weeklyRequests:Number(payload.weeklyRequests)||0,loaded:true,available:true};renderColdOutreach();if(outreach.available)renderOutreach();return true;}).catch(function(){if(token===coldOutreachRequest)showColdOutreachUnavailable();return false;});
       }
       function projectsJsonpRequest(action,params){
@@ -3205,8 +3432,8 @@
       }
       function showOutreachUnavailable(networkFailure){
         outreach={threads:[],entries:[],companies:[],loaded:false,available:false};
-        document.getElementById('outreach-notice').hidden=false;document.getElementById('outreach-notice').textContent=networkFailure?'Outreach could not connect. Use Refresh board to try again.':'Outreach actions activate after the next backend deploy';document.getElementById('outreach-content').hidden=false;['people-pipeline-section','outreach-uncc-section','company-watch-section'].forEach(function(id){var el=document.getElementById(id);if(el)el.hidden=true;});
-        document.getElementById('outreach-people-count').textContent='—';document.getElementById('outreach-alumni-count').textContent='—';document.getElementById('outreach-company-count').textContent='—';document.getElementById('outreach-up-next-count').textContent='0 actionable today · 0 in backlog';document.getElementById('outreach-up-next-list').innerHTML=queueMarkup([],'Outreach could not connect. Refresh the board to try again.');renderCompanyContactTree();renderDoToday();renderUpNext();if(funnel.available)renderFunnel();
+        document.getElementById('outreach-notice').hidden=false;document.getElementById('outreach-notice').textContent=networkFailure?'Outreach could not connect. Use Refresh board to try again.':'Outreach actions activate after the next backend deploy';document.getElementById('outreach-content').hidden=false;['company-watch-section'].forEach(function(id){var el=document.getElementById(id);if(el)el.hidden=true;});
+        document.getElementById('outreach-company-count').textContent='—';document.getElementById('outreach-up-next-count').textContent='0 actionable today · 0 in backlog';document.getElementById('outreach-up-next-list').innerHTML=queueMarkup([],'Outreach could not connect. Refresh the board to try again.');renderPeopleGroups();renderCompanyContactTree();renderDoToday();renderUpNext();if(funnel.available)renderFunnel();
       }
       function loadFollowups(){
         return outreachGet('followups',0,0).then(function(payload){
@@ -3219,7 +3446,7 @@
         var request=loadFollowups().then(function(threadsPayload){return outreachGet('peopleLog').then(function(entriesPayload){return outreachGet('watchData').then(function(companiesPayload){return [threadsPayload,entriesPayload,companiesPayload];});});}).then(function(results){
           if(token!==outreachRequest)return false;var threads=followupsFromPayload(results[0]),entries=results[1].entries,companies=results[2].companies;
           if(!Array.isArray(threads)||!Array.isArray(entries)||!Array.isArray(companies))throw new Error('missing outreach data');
-          outreachLoading=false;outreach={threads:threads,entries:entries,companies:companies,loaded:true,available:true};notice.hidden=true;document.getElementById('outreach-content').hidden=false;['people-pipeline-section','outreach-uncc-section','company-watch-section'].forEach(function(id){var el=document.getElementById(id);if(el)el.hidden=false;});renderOutreach();refreshRoutineRows();renderDoToday();renderUpNext();refreshPortalActions();if(funnel.available)renderFunnel();return ensureAutomaticFollowups();
+          outreachLoading=false;outreach={threads:threads,entries:entries,companies:companies,loaded:true,available:true};notice.hidden=true;document.getElementById('outreach-content').hidden=false;['potential-connections-section','open-requests-section','accepted-connections-section','company-watch-section'].forEach(function(id){var el=document.getElementById(id);if(el)el.hidden=false;});renderOutreach();refreshRoutineRows();renderDoToday();renderUpNext();refreshPortalActions();if(funnel.available)renderFunnel();return ensureAutomaticFollowups();
         }).then(function(result){return result!==false;}).catch(function(error){if(token===outreachRequest){outreachLoading=false;showOutreachUnavailable(!!(error&&error.network));}return false;});
         outreachLoadPromise=request;request.then(function(){if(outreachLoadPromise===request)outreachLoadPromise=null;});return request;
       }
@@ -3619,14 +3846,12 @@
       function renderOutreach(){
         if(!outreach.available)return;promoteSuggestedProspects();var people=outreachPeople(),threads=activeOutreachThreads(),today=browserToday();threads.sort(function(a,b){return (calendarDay(val(a,'dueDate'))||Infinity)-(calendarDay(val(b,'dueDate'))||Infinity);});
         var companies=fullWatchRoster(outreach.companies);companies.forEach(function(company){company._watchRank=companyWatchRank(company,threads,today);});companies.sort(function(a,b){var ar=a._watchRank,br=b._watchRank;if(ar.band!==br.band)return ar.band-br.band;if(ar.band===3)return ar.name.localeCompare(br.name);return br.activity-ar.activity||ar.name.localeCompare(br.name);});
-        var due=threads.filter(function(thread){var day=calendarDay(val(thread,'dueDate'));return day!==null&&day<=calendarDay(today);}).length;renderOutreachUpNext(people,threads,companies);
-        // One tile per person: anyone with an active cold-outreach card is
-        // represented there (the cold card folds in the pipeline content), so
-        // they are not also rendered as a separate people-pipeline card.
-        var activeCold=coldOutreach.available?coldActiveContacts():[],visiblePeople=people.filter(function(person){return !activeCold.some(function(contact){return personKey(contact.name)===personKey(person.name)&&(companyMatchesFilter(contact.company,person.company)||companyMatchesFilter(person.company,contact.company));});});
-        document.getElementById('outreach-people-count').textContent=visiblePeople.length;document.getElementById('outreach-alumni-count').textContent=uncc.prospects.length;document.getElementById('outreach-company-count').textContent=companies.length;
-        document.getElementById('people-pipeline-count').textContent=visiblePeople.length+' people';document.getElementById('company-watch-count').textContent=companies.length+' companies';
-        document.getElementById('people-pipeline-grid').innerHTML=visiblePeople.length?visiblePeople.map(personCard).join(''):empty('No people are in the outreach pipeline yet.');
+        renderOutreachUpNext(people,threads,companies);
+        // One card per person across the three groups, built from the
+        // merged list — nobody also renders as a pipeline or alumni card.
+        renderPeopleGroups();
+        document.getElementById('outreach-company-count').textContent=companies.length;
+        document.getElementById('company-watch-count').textContent=companies.length+' companies';
         document.getElementById('company-watch-grid').innerHTML=companies.length?companies.map(watchCard).join(''):empty('No companies are on watch.');
         renderCompanyContactTree();bindOutreachControls();applyOutreachSearch();
       }
