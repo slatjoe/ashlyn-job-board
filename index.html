@@ -847,11 +847,6 @@
       <div class="today-stack section-body" id="today-stack"></div>
     </details>
 
-    <details class="queue waiting-shell collapsible-section jump-target" id="jobs-waiting-section" aria-labelledby="jobs-waiting-heading">
-      <summary class="queue-head"><div><h2 id="jobs-waiting-heading">Waiting — weekly check (<span class="section-heading-count" id="jobs-waiting-count">— waiting</span>)</h2></div><div class="section-summary-meta"><span class="section-summary-copy">Checked once a week, not daily. Someone is named here only when a LinkedIn archive import shows their status actually changed.</span><span class="section-toggle" aria-hidden="true"><span>Show/Hide</span></span></div></summary>
-      <div class="section-body" id="jobs-waiting-list"><p class="waiting-empty">Waiting contacts load with the tracker feed.</p></div>
-    </details>
-
     <div id="loading" class="loading">Loading the latest tracker data…</div>
     <div id="content" hidden>
       <details class="queue jump-target collapsible-section" id="review-section" aria-labelledby="review-heading">
@@ -1311,7 +1306,7 @@
         return out;
       }
       function renderWaiting(){
-        var surfaces=[{list:document.getElementById('jobs-waiting-list'),count:document.getElementById('jobs-waiting-count')},{list:document.getElementById('outreach-waiting-list'),count:document.getElementById('outreach-waiting-count')}];
+        var surfaces=[{list:document.getElementById('outreach-waiting-list'),count:document.getElementById('outreach-waiting-count')}];
         var waiting=collectWaiting(),today=browserToday();
         var changed=waiting.filter(function(item){var d=dateOnly(item.changeDate);if(!d)return false;var days=daysBetween(today,d);return days>=0&&days<=7;});
         var byState={};waiting.forEach(function(item){var label=waitingStateLabel(item.state);byState[label]=(byState[label]||0)+1;});
