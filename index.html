@@ -463,7 +463,7 @@
     .tips-list{margin:0;padding-left:26px;display:grid;gap:12px}
     .tips-list li{padding-left:4px;font-size:14px;overflow-wrap:anywhere}
     .tips-list li::marker{font:600 12px "IBM Plex Mono",monospace;color:var(--green)}
-    .view-toggle{display:grid;width:max-content;grid-template-columns:repeat(2,minmax(110px,1fr));gap:2px;padding:3px;background:var(--line);border:1px solid var(--line);margin:0 0 20px;box-shadow:var(--shadow);position:sticky;top:0;z-index:10}
+    .view-toggle{display:grid;width:max-content;grid-template-columns:repeat(3,minmax(96px,1fr));gap:2px;padding:3px;background:var(--line);border:1px solid var(--line);margin:0 0 20px;box-shadow:var(--shadow);position:sticky;top:0;z-index:10}
     .view-tab{border:0;background:var(--paper);padding:10px 18px;font-weight:700;cursor:pointer}
     .view-tab[aria-selected="true"]{background:var(--ink);color:var(--paper)}
     .view-tab:focus-visible{outline:2px solid var(--green);outline-offset:2px}
@@ -671,6 +671,38 @@
       .scores{padding:12px 16px}
       .action,.refresh,.filter-reset,.outreach-search-clear{min-height:42px}
     }
+    .projects-view{min-width:0}
+    .projects-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    @media(max-width:1060px){.projects-grid{grid-template-columns:1fr}}
+    .project-card .card-head{display:grid;gap:10px}
+    .project-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .project-slug{font-size:20px;line-height:1.3;font-weight:600;margin:0;overflow-wrap:anywhere}
+    .project-repo-link{color:var(--blue);font-size:14px;font-weight:600;text-underline-offset:3px;overflow-wrap:anywhere}
+    .project-progress{display:flex;align-items:center;gap:10px}
+    .project-progress-track{flex:1;height:8px;background:var(--surface-soft);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+    .project-progress-fill{height:100%;background:var(--blue)}
+    .project-progress-label{font-size:13px;color:var(--secondary);white-space:nowrap;font-weight:600}
+    .project-status-lines{display:grid;gap:3px}
+    .project-status-line{margin:0;font-size:14px;color:var(--secondary)}
+    .project-steps{list-style:none;margin:0;padding:0;display:grid}
+    .project-step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:9px 0;border-top:1px solid var(--line);align-items:start}
+    .project-step:first-child{border-top:0;padding-top:0}
+    .project-step-check{width:19px;height:19px;margin-top:2px;accent-color:var(--blue);cursor:pointer;flex:0 0 auto}
+    .project-step-check:disabled{cursor:wait;opacity:.55}
+    .project-step-main{display:grid;gap:3px;min-width:0}
+    .project-step-head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+    .project-step-num{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+    .project-step-text{font-size:15px;line-height:1.45;overflow-wrap:anywhere}
+    .project-step.done .project-step-text{color:var(--secondary)}
+    .project-step-status{font-size:12px;font-weight:600;color:var(--amber)}
+    .project-step-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
+    .project-step-evidence{color:var(--blue);font-weight:600;text-underline-offset:3px;overflow-wrap:anywhere}
+    .project-step-prompt{display:grid;gap:7px;margin-top:6px;padding:10px;background:var(--surface-soft);border:1px solid var(--line);border-radius:var(--radius-sm)}
+    .project-step-prompt .label{margin:0}
+    .project-prompt-actions{display:flex;gap:7px;flex-wrap:wrap}
+    .project-feedback{min-height:17px;margin:0;font-size:13px;color:var(--muted)}
+    .project-feedback.success{color:var(--success)}
+    .project-feedback.error{color:var(--danger)}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
   </style>
 </head>
@@ -689,6 +721,7 @@
     <div class="view-toggle" role="tablist" aria-label="Board view">
       <button class="view-tab" id="jobs-tab" type="button" role="tab" aria-selected="true" aria-controls="jobs-view">Jobs</button>
       <button class="view-tab" id="outreach-tab" type="button" role="tab" aria-selected="false" aria-controls="outreach-view">Outreach</button>
+      <button class="view-tab" id="projects-tab" type="button" role="tab" aria-selected="false" aria-controls="projects-view">Projects</button>
     </div>
 
     <div id="jobs-view" role="tabpanel" aria-labelledby="jobs-tab">
@@ -845,6 +878,14 @@
       </div>
     </div>
 
+    <div class="projects-view" id="projects-view" role="tabpanel" aria-labelledby="projects-tab" hidden>
+      <section class="queue" aria-labelledby="projects-heading">
+        <div class="queue-head"><div><h2 id="projects-heading">Projects</h2></div><p>Each project moves one plan step at a time. A step is checked off with its commit link, so progress stays traceable in Git.</p></div>
+        <div class="outreach-notice" id="projects-notice">Loading projects…</div>
+        <div class="grid projects-grid" id="projects-grid" hidden></div>
+      </section>
+    </div>
+
     <footer><span id="footer-count">Waiting for tracker</span><span id="footer-time">Live board</span></footer>
   </main>
 
@@ -859,7 +900,7 @@
         {name:'Caterpillar',email:'ashlyn2026@theslatterys.com',url:'https://cat.wd5.myworkdayjobs.com/CaterpillarCareers/login',match:/\bcaterpillar\b/i}
       ];
       var REASONS=['','Not EE enough','Too senior','Location','Travel/safety','Enrollment required','Software-heavy','Pay','Company not a good fit','Other'];
-      var data={jobs:[],connections:[],connectionsLoaded:false,loaded:false,count:0,generated:''}, uncc={prospects:[],loaded:false}, outreach={threads:[],entries:[],companies:[],loaded:false,available:null}, coldOutreach={contacts:[],weeklyRequests:0,loaded:false,available:null}, minScores={fit:0,stretch:0,dna:0}, query='', outreachQuery='', decisionWindow='7', feedScript=null, feedTimer=null, feedCallback='', feedRequest=0, jsonpQueue=Promise.resolve(), supplementalRefresh=0, supplementalReady=false, tipsRequest=0, velocityRequest=0, velocityPayload=null, velocityStatus='idle', unccRequest=0, outreachRequest=0, coldOutreachRequest=0, filterTimer=0, focusSize=null, focusOverrides={}, pursueSearchState=null, outreachSearchState=null, attachmentNudges={}, attachedOverrides={}, autoFollowupStarting={}, connectionsLoading=false, outreachLoading=false, outreachLoadPromise=null;
+      var data={jobs:[],connections:[],connectionsLoaded:false,loaded:false,count:0,generated:''}, uncc={prospects:[],loaded:false}, outreach={threads:[],entries:[],companies:[],loaded:false,available:null}, coldOutreach={contacts:[],weeklyRequests:0,loaded:false,available:null}, projects={list:[],loaded:false,available:null}, minScores={fit:0,stretch:0,dna:0}, query='', outreachQuery='', decisionWindow='7', feedScript=null, feedTimer=null, feedCallback='', feedRequest=0, jsonpQueue=Promise.resolve(), supplementalRefresh=0, supplementalReady=false, tipsRequest=0, velocityRequest=0, velocityPayload=null, velocityStatus='idle', unccRequest=0, outreachRequest=0, coldOutreachRequest=0, projectsRequest=0, projectsLoading=false, filterTimer=0, focusSize=null, focusOverrides={}, pursueSearchState=null, outreachSearchState=null, attachmentNudges={}, attachedOverrides={}, autoFollowupStarting={}, connectionsLoading=false, outreachLoading=false, outreachLoadPromise=null;
 
       function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
       function coachDisplayText(value){
@@ -2361,9 +2402,10 @@
         setTimeout(function(){target.classList.remove('section-highlight');},1400);
       }
       function setView(name){
-        var outreachOn=name==='outreach',jobs=document.getElementById('jobs-view'),outreachView=document.getElementById('outreach-view'),jobsTab=document.getElementById('jobs-tab'),outreachTab=document.getElementById('outreach-tab');
-        jobs.hidden=outreachOn;outreachView.hidden=!outreachOn;jobsTab.setAttribute('aria-selected',outreachOn?'false':'true');outreachTab.setAttribute('aria-selected',outreachOn?'true':'false');
+        var outreachOn=name==='outreach',projectsOn=name==='projects',jobs=document.getElementById('jobs-view'),outreachView=document.getElementById('outreach-view'),projectsView=document.getElementById('projects-view'),jobsTab=document.getElementById('jobs-tab'),outreachTab=document.getElementById('outreach-tab'),projectsTab=document.getElementById('projects-tab');
+        jobs.hidden=outreachOn||projectsOn;outreachView.hidden=!outreachOn;if(projectsView)projectsView.hidden=!projectsOn;jobsTab.setAttribute('aria-selected',!outreachOn&&!projectsOn?'true':'false');outreachTab.setAttribute('aria-selected',outreachOn?'true':'false');if(projectsTab)projectsTab.setAttribute('aria-selected',projectsOn?'true':'false');
         if(outreachOn&&outreach.available===null)loadOutreachData();if(outreachOn&&coldOutreach.available===null)loadColdOutreachData();
+        if(projectsOn&&projects.available===null)loadProjectsData();
       }
       var jsonpCounter=0;
       function jsonpRequest(action,params){
@@ -2609,6 +2651,133 @@
       function loadColdOutreachData(){
         var token=++coldOutreachRequest,grid=document.getElementById('cold-outreach-grid');if(coldOutreach.available===null&&grid)grid.innerHTML='<p class="uncc-notice">Loading cold outreach…</p>';
         return outreachGet('outreachData').then(function(payload){if(token!==coldOutreachRequest)return false;if(!Array.isArray(payload.contacts))throw new Error('missing contacts');coldOutreach={contacts:payload.contacts.map(normalizeColdContact),weeklyRequests:Number(payload.weeklyRequests)||0,loaded:true,available:true};renderColdOutreach();if(outreach.available)renderOutreach();return true;}).catch(function(){if(token===coldOutreachRequest)showColdOutreachUnavailable();return false;});
+      }
+      function projectsJsonpRequest(action,params){
+        params=params||{};
+        return new Promise(function(resolve,reject){
+          var callbackName='jsonp_projects_'+(++jsonpCounter)+'_'+Date.now(),script=document.createElement('script'),done=false;
+          var timeout=setTimeout(function(){finish(new Error('Request timed out for '+action));},20000);
+          function cleanup(){clearTimeout(timeout);try{delete window[callbackName];}catch(e){window[callbackName]=undefined;}if(script.parentNode)script.parentNode.removeChild(script);}
+          function finish(error,payload){if(done)return;done=true;cleanup();if(error)reject(error);else resolve(payload);}
+          window[callbackName]=function(payload){if(!payload||typeof payload!=='object')finish(new Error('Invalid response for '+action));else finish(null,payload);};
+          var url=actionUrl(action,params);url+=(url.indexOf('?')>=0?'&':'?')+'callback='+encodeURIComponent(callbackName)+'&_='+Date.now();
+          script.src=url;script.async=true;script.onerror=function(){finish(new Error('Request failed for '+action));};
+          document.body.appendChild(script);
+        });
+      }
+      function projectsGet(action,params){
+        var request=jsonpQueue.then(function(){return projectsJsonpRequest(action,params);},function(){return projectsJsonpRequest(action,params);});
+        jsonpQueue=request.then(function(){},function(){});
+        return request;
+      }
+      function projectWrite(action,params){
+        return projectsGet(action,params||{}).then(function(payload){
+          if(payload&&(payload.ok===false||payload.success===false))throw new Error(String(payload.error||payload.message||'Could not save. Please try again.'));
+          if(payload&&payload.error)throw new Error(String(payload.error));
+          return payload;
+        });
+      }
+      function normalizeProjectStep(step){
+        step=step||{};
+        return {n:Number(val(step,'n'))||0,text:String(val(step,'text')||''),status:String(val(step,'status')||'Not started'),evidence:String(val(step,'evidence')||''),dateDone:String(val(step,'dateDone')||'')};
+      }
+      function normalizeProject(project){
+        project=project||{};
+        var steps=Array.isArray(project.steps)?project.steps.map(normalizeProjectStep):[];
+        steps.sort(function(a,b){return a.n-b.n;});
+        var doneCount=steps.filter(function(s){return s.status==='Done';}).length;
+        var totalNum=Number(project.stepsTotal),doneNum=Number(project.stepsDone);
+        var hasTotal=project.stepsTotal!==''&&project.stepsTotal!==null&&project.stepsTotal!==undefined&&isFinite(totalNum);
+        var hasDone=project.stepsDone!==''&&project.stepsDone!==null&&project.stepsDone!==undefined&&isFinite(doneNum);
+        return {slug:String(val(project,'slug')||''),repo:String(val(project,'repo')||''),invitation:String(val(project,'invitation')||''),inviteSent:String(val(project,'inviteSent')||''),inviteRequested:String(val(project,'inviteRequested')||''),herCommits:Number(project.herCommits)||0,lastCommit:String(val(project,'lastCommit')||''),herLastCommit:String(val(project,'herLastCommit')||''),stepsTotal:hasTotal?totalNum:steps.length,stepsDone:hasDone?doneNum:doneCount,steps:steps};
+      }
+      function projectStepRow(project,step){
+        var isDone=step.status==='Done',evidenceUrl=safeHttpsUrl(step.evidence),meta='';
+        if(isDone){
+          var bits=[step.dateDone?'Done '+esc(formatDate(step.dateDone)):'Done'];
+          if(evidenceUrl)bits.push('<a class="project-step-evidence" href="'+esc(evidenceUrl)+'" target="_blank" rel="noopener noreferrer">Commit ↗</a>');
+          else if(step.evidence)bits.push(esc(step.evidence));
+          meta='<div class="project-step-meta">'+bits.join('<span aria-hidden="true">·</span> ')+'</div>';
+        }else if(step.status==='In progress'){
+          meta='<div class="project-step-meta"><span class="project-step-status">In progress</span></div>';
+        }
+        var promptId=('project-prompt-'+project.slug+'-'+step.n).replace(/[^A-Za-z0-9_-]/g,'-');
+        return '<li class="project-step'+(isDone?' done':'')+'" data-slug="'+esc(project.slug)+'" data-step="'+step.n+'"><input type="checkbox" class="project-step-check" data-slug="'+esc(project.slug)+'" data-step="'+step.n+'" aria-label="Mark step '+step.n+' done"'+(isDone?' checked':'')+'><div class="project-step-main"><div class="project-step-head"><span class="project-step-num">Step '+step.n+'</span><span class="project-step-text">'+esc(step.text)+'</span></div>'+meta+'<div class="project-step-prompt" hidden><label class="label" for="'+esc(promptId)+'">Commit link for this step</label><input class="field project-step-url" id="'+esc(promptId)+'" type="url" inputmode="url" placeholder="https://github.com/…/commit/…" autocomplete="off"><div class="project-prompt-actions"><button type="button" class="action primary project-step-confirm">Check off step</button><button type="button" class="action project-step-cancel">Cancel</button></div><p class="project-feedback project-prompt-feedback" role="status" aria-live="polite"></p></div></div></li>';
+      }
+      function projectCard(project){
+        var total=project.stepsTotal||project.steps.length||0,done=total?Math.min(project.stepsDone||0,total):(project.stepsDone||0),pct=total?Math.round(done/total*100):0;
+        var repoUrl=safeHttpsUrl(project.repo),lines=[];
+        if(project.invitation==='Accepted')lines.push('GitHub access: accepted');
+        else if(project.invitation==='Pending')lines.push('GitHub invitation pending'+(project.inviteSent?' since '+esc(formatDate(project.inviteSent)):''));
+        if(project.inviteRequested)lines.push('Invitation requested '+esc(formatDate(project.inviteRequested))+' — a fresh one is on its way');
+        var commits='Her commits: '+esc(project.herCommits);
+        if(project.herLastCommit)commits+=' · Last commit '+esc(formatDate(project.herLastCommit));
+        lines.push(commits);
+        var statusHtml='<div class="project-status-lines">'+lines.map(function(line){return '<p class="project-status-line">'+line+'</p>';}).join('')+'</div>';
+        var inviteHtml=(project.invitation!=='Accepted'&&!project.inviteRequested)?'<div class="actions"><button type="button" class="action project-invite" data-slug="'+esc(project.slug)+'">Request a new invitation</button></div>':'';
+        var stepsHtml=project.steps.length?'<ol class="project-steps">'+project.steps.map(function(step){return projectStepRow(project,step);}).join('')+'</ol>':'<p class="copy muted">No steps are listed for this project yet.</p>';
+        return '<article class="card project-card" data-project-slug="'+esc(project.slug)+'"><div class="card-head"><div class="project-title-row"><h3 class="project-slug">'+esc(project.slug||'Untitled project')+'</h3>'+(repoUrl?'<a class="project-repo-link" href="'+esc(repoUrl)+'" target="_blank" rel="noopener noreferrer">'+esc(repoUrl.replace(/^https:\/\//,''))+' ↗</a>':'')+'</div><div class="project-progress"><div class="project-progress-track" role="progressbar" aria-valuenow="'+done+'" aria-valuemin="0" aria-valuemax="'+total+'" aria-label="Steps complete for '+esc(project.slug)+'"><div class="project-progress-fill" style="width:'+pct+'%"></div></div><span class="project-progress-label">'+done+' of '+total+' steps</span></div></div><div class="card-body">'+statusHtml+inviteHtml+'<div><div class="label">Plan steps</div>'+stepsHtml+'</div><p class="project-feedback" role="status" aria-live="polite"></p></div></article>';
+      }
+      function renderProjects(){
+        var grid=document.getElementById('projects-grid'),notice=document.getElementById('projects-notice');if(!grid||!notice)return;
+        if(!projects.available||!projects.list.length){grid.hidden=true;grid.innerHTML='';notice.hidden=false;notice.textContent='Projects are not connected yet.';return;}
+        notice.hidden=true;grid.hidden=false;
+        grid.innerHTML=projects.list.map(projectCard).join('');
+        bindProjectControls(grid);
+      }
+      function showProjectsUnavailable(){projects={list:[],loaded:false,available:false};renderProjects();}
+      function loadProjectsData(){
+        if(projectsLoading)return Promise.resolve(false);
+        var token=++projectsRequest,notice=document.getElementById('projects-notice'),grid=document.getElementById('projects-grid');
+        projectsLoading=true;
+        if(!projects.loaded&&notice){notice.hidden=false;notice.textContent='Loading projects…';}
+        if(grid&&!projects.loaded)grid.hidden=true;
+        return projectsGet('projects',{}).then(function(payload){
+          projectsLoading=false;if(token!==projectsRequest)return false;
+          if(!payload||!Array.isArray(payload.projects)||!payload.projects.length)throw new Error('no projects');
+          projects={list:payload.projects.map(normalizeProject),loaded:true,available:true};renderProjects();return true;
+        }).catch(function(){projectsLoading=false;if(token===projectsRequest)showProjectsUnavailable();return false;});
+      }
+      function setProjectFeedback(scopeEl,text,kind){
+        var card=scopeEl&&scopeEl.closest?scopeEl.closest('.project-card'):null,line=card&&card.querySelector('.card-body > .project-feedback');
+        if(line){line.className='project-feedback'+(kind?' '+kind:'');line.textContent=text;}
+      }
+      function requestProjectInvite(button){
+        if(button.disabled)return;var slug=button.dataset.slug||'';button.disabled=true;setProjectFeedback(button,'Requesting a new invitation…','');
+        projectWrite('projectInvite',{project:slug}).then(function(){setProjectFeedback(button,'Invitation requested. Refreshing…','success');loadProjectsData();}).catch(function(error){button.disabled=false;setProjectFeedback(button,error&&error.message?error.message:'Could not request an invitation. Please try again.','error');});
+      }
+      function onProjectStepToggle(checkbox){
+        var row=checkbox.closest('.project-step');if(!row)return;
+        var slug=checkbox.dataset.slug||'',n=checkbox.dataset.step||'';
+        if(checkbox.checked){
+          checkbox.checked=false;
+          var prompt=row.querySelector('.project-step-prompt');
+          if(prompt){prompt.hidden=false;var input=prompt.querySelector('.project-step-url');if(input)setTimeout(function(){input.focus();},0);}
+          return;
+        }
+        checkbox.disabled=true;setProjectFeedback(checkbox,'Saving…','');
+        projectWrite('projectStep',{project:slug,step:n,done:0}).then(function(){loadProjectsData();}).catch(function(error){checkbox.disabled=false;checkbox.checked=true;setProjectFeedback(checkbox,error&&error.message?error.message:'Could not save. Please try again.','error');});
+      }
+      function confirmProjectStep(button){
+        var row=button.closest('.project-step');if(!row)return;
+        var prompt=row.querySelector('.project-step-prompt'),input=prompt&&prompt.querySelector('.project-step-url'),feedback=prompt&&prompt.querySelector('.project-prompt-feedback'),url=input?input.value.trim():'';
+        var slug=row.dataset.slug||'',n=row.dataset.step||'';
+        if(!url){if(feedback){feedback.className='project-feedback project-prompt-feedback error';feedback.textContent='Add the commit link to check this step off.';}if(input)input.focus();return;}
+        var cancel=prompt.querySelector('.project-step-cancel');button.disabled=true;if(cancel)cancel.disabled=true;if(input)input.disabled=true;
+        if(feedback){feedback.className='project-feedback project-prompt-feedback';feedback.textContent='Saving…';}
+        projectWrite('projectStep',{project:slug,step:n,done:1,evidence:url}).then(function(){loadProjectsData();}).catch(function(error){button.disabled=false;if(cancel)cancel.disabled=false;if(input)input.disabled=false;if(feedback){feedback.className='project-feedback project-prompt-feedback error';feedback.textContent=error&&error.message?error.message:'Could not save. Please try again.';}});
+      }
+      function cancelProjectStep(button){
+        var row=button.closest('.project-step');if(!row)return;var prompt=row.querySelector('.project-step-prompt');if(!prompt)return;
+        var input=prompt.querySelector('.project-step-url'),feedback=prompt.querySelector('.project-prompt-feedback'),checkbox=row.querySelector('.project-step-check');
+        prompt.hidden=true;if(input)input.value='';if(feedback)feedback.textContent='';if(checkbox){checkbox.checked=false;checkbox.focus();}
+      }
+      function bindProjectControls(root){
+        if(!root)return;
+        root.querySelectorAll('.project-invite').forEach(function(button){if(button.dataset.bound)return;button.dataset.bound='true';button.addEventListener('click',function(){requestProjectInvite(button);});});
+        root.querySelectorAll('.project-step-check').forEach(function(box){if(box.dataset.bound)return;box.dataset.bound='true';box.addEventListener('change',function(){onProjectStepToggle(box);});});
+        root.querySelectorAll('.project-step-confirm').forEach(function(button){if(button.dataset.bound)return;button.dataset.bound='true';button.addEventListener('click',function(){confirmProjectStep(button);});});
+        root.querySelectorAll('.project-step-cancel').forEach(function(button){if(button.dataset.bound)return;button.dataset.bound='true';button.addEventListener('click',function(){cancelProjectStep(button);});});
       }
       function coldOutreachPost(action,params){
         return outreachPost(action,params||{});
@@ -3041,7 +3210,7 @@
           window.scrollTo({top:0,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
           return;
         }
-        setView(tab.id==='outreach-tab'?'outreach':'jobs');
+        setView(tab.id==='outreach-tab'?'outreach':tab.id==='projects-tab'?'projects':'jobs');
         window.scrollTo({top:0,behavior:'auto'});
       });});
       document.addEventListener('submit',function(e){var form=e.target;if(form&&form.classList&&form.classList.contains('log-message-form')){e.preventDefault();saveLogMessage(form);}});
