@@ -463,7 +463,7 @@
     .tips-list{margin:0;padding-left:26px;display:grid;gap:12px}
     .tips-list li{padding-left:4px;font-size:14px;overflow-wrap:anywhere}
     .tips-list li::marker{font:600 12px "IBM Plex Mono",monospace;color:var(--green)}
-    .view-toggle{display:grid;width:max-content;grid-template-columns:repeat(3,minmax(96px,1fr));gap:2px;padding:3px;background:var(--line);border:1px solid var(--line);margin:0 0 20px;box-shadow:var(--shadow);position:sticky;top:0;z-index:10}
+    .view-toggle{display:grid;width:max-content;grid-template-columns:repeat(4,minmax(88px,1fr));gap:2px;padding:3px;background:var(--line);border:1px solid var(--line);margin:0 0 20px;box-shadow:var(--shadow);position:sticky;top:0;z-index:10}
     .view-tab{border:0;background:var(--paper);padding:10px 18px;font-weight:700;cursor:pointer}
     .view-tab[aria-selected="true"]{background:var(--ink);color:var(--paper)}
     .view-tab:focus-visible{outline:2px solid var(--green);outline-offset:2px}
@@ -712,6 +712,35 @@
     .project-feedback{min-height:17px;margin:0;font-size:13px;color:var(--muted)}
     .project-feedback.success{color:var(--success)}
     .project-feedback.error{color:var(--danger)}
+    .funnel-view{min-width:0}
+    .funnel-wrap{max-width:720px;margin:6px auto 0}
+    .funnel-stages{display:flex;flex-direction:column;align-items:center;gap:7px}
+    .funnel-stage{display:flex;justify-content:center;width:100%}
+    .funnel-bar{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:168px;padding:13px 14px 12px;text-align:center;border:1px solid color-mix(in srgb,var(--blue) 45%,var(--line));clip-path:polygon(0 0,100% 0,calc(100% - 9px) 100%,9px 100%)}
+    .funnel-num{font:600 27px/1 "IBM Plex Mono",monospace;color:var(--ink);letter-spacing:-.02em}
+    .funnel-label{font-size:12.5px;font-weight:600;color:var(--secondary);line-height:1.3}
+    .funnel-num.on-blue,.funnel-label.on-blue{color:#08111d}
+    .funnel-fan{position:relative;height:30px;margin-top:2px}
+    .funnel-fan .fan-v{position:absolute;left:50%;top:0;width:2px;height:15px;margin-left:-1px;background:var(--line-strong)}
+    .funnel-fan .fan-h{position:absolute;top:15px;left:16.667%;right:16.667%;height:2px;background:var(--line-strong)}
+    .funnel-fan .fan-d{position:absolute;top:15px;width:2px;height:15px;margin-left:-1px;background:var(--line-strong)}
+    .funnel-fan .fan-d.d1{left:16.667%}
+    .funnel-fan .fan-d.d2{left:50%}
+    .funnel-fan .fan-d.d3{left:83.333%}
+    .funnel-outcomes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .funnel-outcome{display:flex;flex-direction:column;align-items:center;gap:3px;padding:16px 12px 14px;text-align:center;border:1px solid var(--line)}
+    .funnel-outcome.interview{background:color-mix(in srgb,var(--success) 16%,var(--paper));border-color:color-mix(in srgb,var(--success) 45%,var(--line))}
+    .funnel-outcome.awaiting{background:var(--amber-soft);border-color:color-mix(in srgb,var(--amber) 45%,var(--line))}
+    .funnel-outcome.rejected{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+    .funnel-outcome-num{font:600 30px/1 "IBM Plex Mono",monospace;color:var(--ink)}
+    .funnel-outcome-label{font-size:12.5px;font-weight:600;color:var(--secondary);line-height:1.3}
+    .funnel-asof{margin:16px 0 0;text-align:center;font:500 11px "IBM Plex Mono",monospace;color:var(--muted)}
+    @media(max-width:560px){
+      .view-tab{padding:8px 4px;font-size:13px}
+      .funnel-bar{min-width:150px}
+      .funnel-fan{display:none}
+      .funnel-outcomes{grid-template-columns:1fr;margin-top:12px}
+    }
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
   </style>
 </head>
@@ -731,6 +760,7 @@
       <button class="view-tab" id="jobs-tab" type="button" role="tab" aria-selected="true" aria-controls="jobs-view">Jobs</button>
       <button class="view-tab" id="outreach-tab" type="button" role="tab" aria-selected="false" aria-controls="outreach-view">Outreach</button>
       <button class="view-tab" id="projects-tab" type="button" role="tab" aria-selected="false" aria-controls="projects-view">Projects</button>
+      <button class="view-tab" id="funnel-tab" type="button" role="tab" aria-selected="false" aria-controls="funnel-view">Funnel</button>
     </div>
 
     <div id="jobs-view" role="tabpanel" aria-labelledby="jobs-tab">
@@ -899,6 +929,14 @@
       </section>
     </div>
 
+    <div class="funnel-view" id="funnel-view" role="tabpanel" aria-labelledby="funnel-tab" hidden>
+      <section class="queue" aria-labelledby="funnel-heading">
+        <div class="queue-head"><div><h2 id="funnel-heading">Funnel</h2></div><p>From every company considered down to the applications out — then where those applications stand.</p></div>
+        <div class="outreach-notice" id="funnel-notice">Loading funnel…</div>
+        <div class="funnel-wrap" id="funnel-wrap" hidden></div>
+      </section>
+    </div>
+
     <footer><span id="footer-time">Live board</span></footer>
   </main>
 
@@ -913,7 +951,7 @@
         {name:'Caterpillar',email:'ashlyn2026@theslatterys.com',url:'https://cat.wd5.myworkdayjobs.com/CaterpillarCareers/login',match:/\bcaterpillar\b/i}
       ];
       var REASONS=['','Not EE enough','Too senior','Location','Travel/safety','Enrollment required','Software-heavy','Pay','Company not a good fit','Other'];
-      var data={jobs:[],connections:[],connectionsLoaded:false,loaded:false,count:0,generated:''}, uncc={prospects:[],loaded:false}, outreach={threads:[],entries:[],companies:[],loaded:false,available:null}, coldOutreach={contacts:[],weeklyRequests:0,loaded:false,available:null}, projects={list:[],loaded:false,available:null}, minScores={fit:0,stretch:0,dna:0}, query='', outreachQuery='', decisionWindow='7', feedScript=null, feedTimer=null, feedCallback='', feedRequest=0, jsonpQueue=Promise.resolve(), supplementalRefresh=0, supplementalReady=false, tipsRequest=0, velocityRequest=0, velocityPayload=null, velocityStatus='idle', unccRequest=0, outreachRequest=0, coldOutreachRequest=0, projectsRequest=0, projectsLoading=false, filterTimer=0, focusSize=null, focusOverrides={}, pursueSearchState=null, outreachSearchState=null, attachmentNudges={}, attachedOverrides={}, autoFollowupStarting={}, connectionsLoading=false, outreachLoading=false, outreachLoadPromise=null;
+      var data={jobs:[],connections:[],connectionsLoaded:false,loaded:false,count:0,generated:''}, uncc={prospects:[],loaded:false}, outreach={threads:[],entries:[],companies:[],loaded:false,available:null}, coldOutreach={contacts:[],weeklyRequests:0,loaded:false,available:null}, projects={list:[],loaded:false,available:null}, funnel={data:null,loaded:false,available:null}, minScores={fit:0,stretch:0,dna:0}, query='', outreachQuery='', decisionWindow='7', feedScript=null, feedTimer=null, feedCallback='', feedRequest=0, jsonpQueue=Promise.resolve(), supplementalRefresh=0, supplementalReady=false, tipsRequest=0, velocityRequest=0, velocityPayload=null, velocityStatus='idle', unccRequest=0, outreachRequest=0, coldOutreachRequest=0, projectsRequest=0, projectsLoading=false, funnelRequest=0, funnelLoading=false, filterTimer=0, focusSize=null, focusOverrides={}, pursueSearchState=null, outreachSearchState=null, attachmentNudges={}, attachedOverrides={}, autoFollowupStarting={}, connectionsLoading=false, outreachLoading=false, outreachLoadPromise=null;
 
       function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
       function coachDisplayText(value){
@@ -2415,10 +2453,11 @@
         setTimeout(function(){target.classList.remove('section-highlight');},1400);
       }
       function setView(name){
-        var outreachOn=name==='outreach',projectsOn=name==='projects',jobs=document.getElementById('jobs-view'),outreachView=document.getElementById('outreach-view'),projectsView=document.getElementById('projects-view'),jobsTab=document.getElementById('jobs-tab'),outreachTab=document.getElementById('outreach-tab'),projectsTab=document.getElementById('projects-tab');
-        jobs.hidden=outreachOn||projectsOn;outreachView.hidden=!outreachOn;if(projectsView)projectsView.hidden=!projectsOn;jobsTab.setAttribute('aria-selected',!outreachOn&&!projectsOn?'true':'false');outreachTab.setAttribute('aria-selected',outreachOn?'true':'false');if(projectsTab)projectsTab.setAttribute('aria-selected',projectsOn?'true':'false');
+        var outreachOn=name==='outreach',projectsOn=name==='projects',funnelOn=name==='funnel',jobs=document.getElementById('jobs-view'),outreachView=document.getElementById('outreach-view'),projectsView=document.getElementById('projects-view'),funnelView=document.getElementById('funnel-view'),jobsTab=document.getElementById('jobs-tab'),outreachTab=document.getElementById('outreach-tab'),projectsTab=document.getElementById('projects-tab'),funnelTab=document.getElementById('funnel-tab');
+        jobs.hidden=outreachOn||projectsOn||funnelOn;outreachView.hidden=!outreachOn;if(projectsView)projectsView.hidden=!projectsOn;if(funnelView)funnelView.hidden=!funnelOn;jobsTab.setAttribute('aria-selected',!outreachOn&&!projectsOn&&!funnelOn?'true':'false');outreachTab.setAttribute('aria-selected',outreachOn?'true':'false');if(projectsTab)projectsTab.setAttribute('aria-selected',projectsOn?'true':'false');if(funnelTab)funnelTab.setAttribute('aria-selected',funnelOn?'true':'false');
         if(outreachOn&&outreach.available===null)loadOutreachData();if(outreachOn&&coldOutreach.available===null)loadColdOutreachData();
         if(projectsOn&&projects.available===null)loadProjectsData();
+        if(funnelOn&&funnel.available===null)loadFunnelData();
       }
       var jsonpCounter=0;
       function jsonpRequest(action,params){
@@ -2786,6 +2825,39 @@
           if(!payload||!Array.isArray(payload.projects)||!payload.projects.length)throw new Error('no projects');
           projects={list:payload.projects.map(normalizeProject),loaded:true,available:true};renderProjects();return true;
         }).catch(function(){projectsLoading=false;if(token===projectsRequest)showProjectsUnavailable();return false;});
+      }
+      function funnelNumber(value){var n=Number(value);return isFinite(n)&&n>0?n:0;}
+      function renderFunnel(){
+        var wrap=document.getElementById('funnel-wrap'),notice=document.getElementById('funnel-notice');if(!wrap||!notice)return;
+        if(!funnel.available||!funnel.data){wrap.hidden=true;wrap.innerHTML='';notice.hidden=false;notice.textContent='Funnel is not connected yet.';return;}
+        notice.hidden=true;wrap.hidden=false;
+        var d=funnel.data;
+        var stages=[['Companies considered',d.considered],['Companies being tracked',d.tracked],['Jobs scraped',d.scraped],['Jobs marked for pursuit',d.marked],['Jobs pursued',d.pursued],['Jobs applied',d.applied]];
+        var max=0;stages.forEach(function(s){if(s[1]>max)max=s[1];});
+        var mixes=[24,38,52,66,80,94];
+        var stagesHtml=stages.map(function(s,i){
+          var pct=max>0?Math.sqrt(s[1]/max)*100:0,w=Math.max(pct,22),cls=mixes[i]>=60?' on-blue':'';
+          return '<div class="funnel-stage"><div class="funnel-bar" style="width:'+w.toFixed(1)+'%;background:color-mix(in srgb,var(--blue) '+mixes[i]+'%,var(--surface-raised))"><span class="funnel-num'+cls+'">'+s[1]+'</span><span class="funnel-label'+cls+'">'+esc(s[0])+'</span></div></div>';
+        }).join('');
+        var outcomes=[['Moved to interview',d.interview,'interview'],['Awaiting response',d.awaiting,'awaiting'],['Rejected',d.rejected,'rejected']];
+        var outcomesHtml='<div class="funnel-fan" aria-hidden="true"><span class="fan-v"></span><span class="fan-h"></span><span class="fan-d d1"></span><span class="fan-d d2"></span><span class="fan-d d3"></span></div><div class="funnel-outcomes">'+outcomes.map(function(o){return '<div class="funnel-outcome '+o[2]+'"><span class="funnel-outcome-num">'+o[1]+'</span><span class="funnel-outcome-label">'+esc(o[0])+'</span></div>';}).join('')+'</div>';
+        var asOfHtml='';
+        if(d.asOf){var asOfText=/^\d{4}-\d{2}-\d{2}/.test(d.asOf)?formatDate(d.asOf):d.asOf;asOfHtml='<p class="funnel-asof">Counts as of '+esc(asOfText)+'</p>';}
+        wrap.innerHTML='<div class="funnel-stages">'+stagesHtml+'</div>'+outcomesHtml+asOfHtml;
+      }
+      function showFunnelUnavailable(){funnel={data:null,loaded:false,available:false};renderFunnel();}
+      function loadFunnelData(){
+        if(funnelLoading)return Promise.resolve(false);
+        var token=++funnelRequest,notice=document.getElementById('funnel-notice'),wrap=document.getElementById('funnel-wrap');
+        funnelLoading=true;
+        if(!funnel.loaded&&notice){notice.hidden=false;notice.textContent='Loading funnel…';}
+        if(wrap&&!funnel.loaded)wrap.hidden=true;
+        return projectsGet('funnel',{}).then(function(payload){
+          funnelLoading=false;if(token!==funnelRequest)return false;
+          if(!payload||typeof payload!=='object'||payload.ok===false||payload.error)throw new Error('no funnel');
+          var d={considered:funnelNumber(payload.considered),tracked:funnelNumber(payload.tracked),scraped:funnelNumber(payload.scraped),marked:funnelNumber(payload.marked),pursued:funnelNumber(payload.pursued),applied:funnelNumber(payload.applied),interview:funnelNumber(payload.interview),awaiting:funnelNumber(payload.awaiting),rejected:funnelNumber(payload.rejected),asOf:String(payload.asOf||'')};
+          funnel={data:d,loaded:true,available:true};renderFunnel();return true;
+        }).catch(function(){funnelLoading=false;if(token===funnelRequest)showFunnelUnavailable();return false;});
       }
       function setProjectFeedback(scopeEl,text,kind){
         var card=scopeEl&&scopeEl.closest?scopeEl.closest('.project-card'):null,line=card&&card.querySelector('.card-body > .project-feedback');
@@ -3259,7 +3331,7 @@
           window.scrollTo({top:0,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
           return;
         }
-        setView(tab.id==='outreach-tab'?'outreach':tab.id==='projects-tab'?'projects':'jobs');
+        setView(tab.id==='outreach-tab'?'outreach':tab.id==='projects-tab'?'projects':tab.id==='funnel-tab'?'funnel':'jobs');
         window.scrollTo({top:0,behavior:'auto'});
       });});
       document.addEventListener('submit',function(e){var form=e.target;if(form&&form.classList&&form.classList.contains('log-message-form')){e.preventDefault();saveLogMessage(form);}});
