@@ -734,7 +734,6 @@
     .funnel-outcome.rejected{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
     .funnel-outcome-num{font:600 30px/1 "IBM Plex Mono",monospace;color:var(--ink)}
     .funnel-outcome-label{font-size:12.5px;font-weight:600;color:var(--secondary);line-height:1.3}
-    .funnel-asof{margin:16px 0 0;text-align:center;font:500 11px "IBM Plex Mono",monospace;color:var(--muted)}
     @media(max-width:560px){
       .view-tab{padding:8px 4px;font-size:13px}
       .funnel-bar{min-width:150px}
@@ -930,8 +929,7 @@
     </div>
 
     <div class="funnel-view" id="funnel-view" role="tabpanel" aria-labelledby="funnel-tab" hidden>
-      <section class="queue" aria-labelledby="funnel-heading">
-        <div class="queue-head"><div><h2 id="funnel-heading">Funnel</h2></div><p>From every company considered down to the applications out — then where those applications stand.</p></div>
+      <section class="queue">
         <div class="outreach-notice" id="funnel-notice">Loading funnel…</div>
         <div class="funnel-wrap" id="funnel-wrap" hidden></div>
       </section>
@@ -2841,9 +2839,7 @@
         }).join('');
         var outcomes=[['Moved to interview',d.interview,'interview'],['Awaiting response',d.awaiting,'awaiting'],['Rejected',d.rejected,'rejected']];
         var outcomesHtml='<div class="funnel-fan" aria-hidden="true"><span class="fan-v"></span><span class="fan-h"></span><span class="fan-d d1"></span><span class="fan-d d2"></span><span class="fan-d d3"></span></div><div class="funnel-outcomes">'+outcomes.map(function(o){return '<div class="funnel-outcome '+o[2]+'"><span class="funnel-outcome-num">'+o[1]+'</span><span class="funnel-outcome-label">'+esc(o[0])+'</span></div>';}).join('')+'</div>';
-        var asOfHtml='';
-        if(d.asOf){var asOfText=/^\d{4}-\d{2}-\d{2}/.test(d.asOf)?formatDate(d.asOf):d.asOf;asOfHtml='<p class="funnel-asof">Counts as of '+esc(asOfText)+'</p>';}
-        wrap.innerHTML='<div class="funnel-stages">'+stagesHtml+'</div>'+outcomesHtml+asOfHtml;
+        wrap.innerHTML='<div class="funnel-stages">'+stagesHtml+'</div>'+outcomesHtml;
       }
       function showFunnelUnavailable(){funnel={data:null,loaded:false,available:false};renderFunnel();}
       function loadFunnelData(){
