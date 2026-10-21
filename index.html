@@ -2740,7 +2740,6 @@
         var title=projectTitle(project);
         var repoUrl=safeHttpsUrl(project.repo),lines=[];
         if(project.invitation==='Accepted')lines.push('GitHub access: accepted');
-        else if(project.invitation==='Pending')lines.push('GitHub invitation pending'+(project.inviteSent?' since '+esc(formatDate(project.inviteSent)):''));
         if(project.inviteRequested)lines.push('Invitation requested '+esc(formatDate(project.inviteRequested))+' — a fresh one is on its way');
         if(project.herLastCommit)lines.push('Last commit '+esc(formatDate(project.herLastCommit)));
         else if(project.lastCommit)lines.push('Last commit '+esc(formatDate(project.lastCommit)));
