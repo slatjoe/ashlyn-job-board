@@ -699,9 +699,9 @@
     .project-step-check{width:19px;height:19px;margin-top:2px;accent-color:var(--blue);cursor:pointer;flex:0 0 auto}
     .project-step-check:disabled{cursor:wait;opacity:.55}
     .project-step-main{display:grid;gap:3px;min-width:0}
-    .project-step-head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
-    .project-step-num{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
-    .project-step-text{font-size:15px;line-height:1.45;overflow-wrap:anywhere}
+    .project-step-head{display:flex;gap:8px;align-items:baseline}
+    .project-step-num{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;flex:0 0 auto}
+    .project-step-text{font-size:15px;line-height:1.45;overflow-wrap:anywhere;flex:1 1 0;min-width:0}
     .project-step.done .project-step-text{color:var(--secondary)}
     .project-step-status{font-size:12px;font-weight:600;color:var(--amber)}
     .project-step-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
@@ -2692,7 +2692,7 @@
       }
       function normalizeProjectStep(step){
         step=step||{};
-        return {n:Number(val(step,'n'))||0,text:String(val(step,'text')||''),status:String(val(step,'status')||'Not started'),evidence:String(val(step,'evidence')||''),dateDone:String(val(step,'dateDone')||'')};
+        return {n:Number(val(step,'n'))||0,text:String(val(step,'text')||'').trim(),status:String(val(step,'status')||'Not started'),evidence:String(val(step,'evidence')||''),dateDone:String(val(step,'dateDone')||'')};
       }
       var PROJECT_TITLES={'automated-mosfet-characterization':'Automated MOSFET Characterization','freertos-cortex-m4-sensor-node':'FreeRTOS Sensor Node on Cortex-M4','uefi-bmc-redfish-firmware':'Server Firmware: UEFI, BMC and Redfish','modbus-mqtt-industrial-protocols':'Industrial Protocols: Modbus and MQTT','autocad-switchgear-drawing-package':'AutoCAD Switchgear Drawing Package','product-qualification-reliability':'Product Qualification and Reliability','yield-analysis-spc':'Yield Analysis and SPC'};
       function projectTitle(project){return PROJECT_TITLES[project.slug]||project.slug||'Untitled project';}
@@ -2710,7 +2710,7 @@
         var totalNum=Number(project.stepsTotal),doneNum=Number(project.stepsDone);
         var hasTotal=project.stepsTotal!==''&&project.stepsTotal!==null&&project.stepsTotal!==undefined&&isFinite(totalNum);
         var hasDone=project.stepsDone!==''&&project.stepsDone!==null&&project.stepsDone!==undefined&&isFinite(doneNum);
-        return {slug:String(val(project,'slug')||''),repo:String(val(project,'repo')||''),invitation:String(val(project,'invitation')||''),inviteSent:String(val(project,'inviteSent')||''),inviteRequested:String(val(project,'inviteRequested')||''),herCommits:Number(project.herCommits)||0,dailyCommits:normalizeDailyCommits(project.dailyCommits),lastCommit:String(val(project,'lastCommit')||''),herLastCommit:String(val(project,'herLastCommit')||''),stepsTotal:hasTotal?totalNum:steps.length,stepsDone:hasDone?doneNum:doneCount,steps:steps};
+        return {slug:String(val(project,'slug')||''),repo:String(val(project,'repo')||''),invitation:String(val(project,'invitation')||'').trim(),inviteSent:String(val(project,'inviteSent')||''),inviteRequested:String(val(project,'inviteRequested')||''),herCommits:Number(project.herCommits)||0,dailyCommits:normalizeDailyCommits(project.dailyCommits),lastCommit:String(val(project,'lastCommit')||''),herLastCommit:String(val(project,'herLastCommit')||''),stepsTotal:hasTotal?totalNum:steps.length,stepsDone:hasDone?doneNum:doneCount,steps:steps};
       }
       function commitsGraphHtml(project){
         var series=normalizeDailyCommits(project.dailyCommits);
@@ -2739,15 +2739,17 @@
         var total=project.stepsTotal||project.steps.length||0,done=total?Math.min(project.stepsDone||0,total):(project.stepsDone||0),pct=total?Math.round(done/total*100):0;
         var title=projectTitle(project);
         var repoUrl=safeHttpsUrl(project.repo),lines=[];
-        if(project.invitation==='Accepted')lines.push('GitHub access: accepted');
+        var invitationAccepted=String(project.invitation||'').trim().toLowerCase()==='accepted';
+        var isComplete=total>0&&done>=total;
+        if(invitationAccepted)lines.push('GitHub access: accepted');
         if(project.inviteRequested)lines.push('Invitation requested '+esc(formatDate(project.inviteRequested))+' — a fresh one is on its way');
         if(project.herLastCommit)lines.push('Last commit '+esc(formatDate(project.herLastCommit)));
         else if(project.lastCommit)lines.push('Last commit '+esc(formatDate(project.lastCommit)));
         var statusHtml=lines.length?'<div class="project-status-lines">'+lines.map(function(line){return '<p class="project-status-line">'+line+'</p>';}).join('')+'</div>':'';
-        var inviteHtml=(project.invitation!=='Accepted'&&!project.inviteRequested)?'<div class="actions"><button type="button" class="action project-invite" data-slug="'+esc(project.slug)+'">Request a new invitation</button></div>':'';
+        var inviteHtml=(!invitationAccepted&&!project.inviteRequested)?'<div class="actions"><button type="button" class="action project-invite" data-slug="'+esc(project.slug)+'">Request a new invitation</button></div>':'';
         var stepsHtml=project.steps.length?'<ol class="project-steps">'+project.steps.map(function(step){return projectStepRow(project,step);}).join('')+'</ol>':'<p class="copy muted">No steps are listed for this project yet.</p>';
         var repoHtml=repoUrl?'<a class="project-repo-link" href="'+esc(repoUrl)+'" target="_blank" rel="noopener noreferrer">'+esc(repoUrl.replace(/^https:\/\//,''))+' ↗</a>':'';
-        return '<article class="card project-card" data-project-slug="'+esc(project.slug)+'"><div class="card-head"><div class="project-title-row"><div class="project-title-main"><h3 class="project-title">'+esc(title)+'</h3>'+repoHtml+'</div><span class="project-pct">'+pct+'% complete</span></div><div class="project-progress"><div class="project-progress-track" role="progressbar" aria-valuenow="'+done+'" aria-valuemin="0" aria-valuemax="'+total+'" aria-label="Steps complete for '+esc(title)+'"><div class="project-progress-fill" style="width:'+pct+'%"></div></div><span class="project-progress-label">'+done+' of '+total+' steps</span></div></div><div class="card-body">'+statusHtml+commitsGraphHtml(project)+inviteHtml+'<div><div class="label">Plan steps</div>'+stepsHtml+'</div><p class="project-feedback" role="status" aria-live="polite"></p></div></article>';
+        return '<article class="card project-card" data-project-slug="'+esc(project.slug)+'"><div class="card-head"><div class="project-title-row"><div class="project-title-main"><h3 class="project-title">'+esc(title)+'</h3>'+repoHtml+'</div><span class="project-pct">'+pct+'% complete</span></div><div class="project-progress"><div class="project-progress-track" role="progressbar" aria-valuenow="'+done+'" aria-valuemin="0" aria-valuemax="'+total+'" aria-label="Steps complete for '+esc(title)+'"><div class="project-progress-fill" style="width:'+pct+'%"></div></div><span class="project-progress-label">'+done+' of '+total+' steps</span></div></div><div class="card-body">'+statusHtml+(isComplete?'':commitsGraphHtml(project))+inviteHtml+'<div><div class="label">Plan steps</div>'+stepsHtml+'</div><p class="project-feedback" role="status" aria-live="polite"></p></div></article>';
       }
       function renderProjects(){
         var grid=document.getElementById('projects-grid'),notice=document.getElementById('projects-notice'),completedWrap=document.getElementById('projects-completed'),completedGrid=document.getElementById('projects-completed-grid');if(!grid||!notice)return;
